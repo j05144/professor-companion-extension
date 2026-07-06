@@ -1,0 +1,1 @@
+console.log("Professor Companion is running!");
