@@ -19,7 +19,7 @@ This document tracks our progress, key decisions, challenges, and next steps thr
 ### Goal
 Set up the development environment and initialize the project.
 
-### Completed (Jenna)
+### Completed (Jinge)
 - Created a private GitHub repository.
 - Connected GitHub with VS Code.
 - Cloned the repository locally.
@@ -53,7 +53,7 @@ Set up the development environment and initialize the project.
 
 # Team Responsibilities
 
-## Jenna
+## Jinge
 **Role:** Project Lead
 
 **Responsibilities**
