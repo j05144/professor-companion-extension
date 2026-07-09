@@ -90,7 +90,10 @@ Set up the development environment and initialize the project.
 
 # Work Log Template
 
-## Date | Antony
+## 7/9/2026 | Antony
+Completed: Phase 1 detection working. Extension runs only on RMP professor pages, logs professor name + school. Tested on 5 professors across 4 CUNY schools. Saved technical notes to docs/phase1-notes.md.
+Challenges: whatever actually confused you today (loading unpacked, the console, worktree thing, anything).
+Next Steps: Phase 2 sidebar shell. Sketch wireframe with Jinge first.
 
 ### Completed
 -
