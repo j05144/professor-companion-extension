@@ -1,0 +1,93 @@
+<!--
+  Professor Companion · sidebar template
+  Owner: Jinge (structure + all styling). Antony's content.js only touches
+  elements marked with a "js hook" comment. Do not rename ids without telling him.
+
+  How it's used: content.js fetches this file (web_accessible_resources),
+  parses it, and appends it inside a Shadow DOM root on the RMP page.
+  States are controlled by ONE attribute on the root:
+    <aside id="pc-root" data-state="loading | loaded | empty">
+  Collapse is a class: #pc-root.pc-collapsed shows only the floating tab.
+  Theme is an attribute: data-theme="light | dark" (auto = content.js picks).
+-->
+
+<aside id="pc-root" data-state="loading" data-theme="light">
+
+  <!-- ===== Floating tab (visible only when collapsed) ===== -->
+  <button id="pc-tab" title="Open Professor Companion">        <!-- js hook: click → expand -->
+    <span class="pc-tab-avatar" id="pc-tab-initials">··</span> <!-- js hook: initials -->
+    <span class="pc-tab-arrow">‹</span>
+  </button>
+
+  <!-- ===== Main card ===== -->
+  <div id="pc-card">
+
+    <header class="pc-header">
+      <div class="pc-avatar" id="pc-initials">··</div>          <!-- js hook: initials -->
+      <div class="pc-idblock">
+        <div class="pc-name" id="pc-name">Loading…</div>        <!-- js hook: professor name -->
+        <div class="pc-school" id="pc-school"></div>            <!-- js hook: school · dept -->
+      </div>
+      <div class="pc-actions">
+        <button class="pc-iconbtn" id="pc-theme-btn" title="Theme">◐</button> <!-- js hook -->
+        <button class="pc-iconbtn" id="pc-star-btn" title="Save professor">☆</button> <!-- js hook -->
+        <button class="pc-iconbtn" id="pc-collapse-btn" title="Collapse">›</button>   <!-- js hook -->
+      </div>
+
+      <!-- Theme dropdown (hidden until .pc-open) -->
+      <div class="pc-theme-menu" id="pc-theme-menu">            <!-- js hook: toggle .pc-open -->
+        <button data-theme-choice="light">☀ Light <span class="pc-check">✓</span></button>
+        <button data-theme-choice="dark">☾ Dark <span class="pc-check">✓</span></button>
+        <button data-theme-choice="auto">◐ Auto <span class="pc-check">✓</span></button>
+        <div class="pc-theme-caption">Auto matches your device setting</div>
+      </div>
+    </header>
+
+    <div class="pc-body">
+
+      <div class="pc-label" id="pc-count-label">Reddit mentions · searching…</div> <!-- js hook -->
+
+      <!-- LOADING state: skeletons (shown when data-state="loading") -->
+      <div class="pc-skeletons">
+        <div class="pc-skel-card">
+          <div class="pc-skel h11 w40"></div>
+          <div class="pc-skel h13 w85"></div>
+          <div class="pc-skel h11 w100"></div>
+        </div>
+        <div class="pc-skel-card">
+          <div class="pc-skel h11 w40"></div>
+          <div class="pc-skel h13 w60"></div>
+          <div class="pc-skel h11 w85"></div>
+        </div>
+      </div>
+
+      <!-- LOADED state: content.js appends <a class="pc-post"> cards here -->
+      <div id="pc-posts"></div>                                 <!-- js hook: post cards -->
+
+      <!--
+        Card template for renderSidebar(posts) — copy this structure per post:
+        <a class="pc-post" href="POST_URL" target="_blank" rel="noopener">
+          <div class="pc-meta">r/Baruch · 2y ago · 💬 45</div>
+          <div class="pc-title">Post title here</div>
+          <div class="pc-quote">"Short quote preview…"</div>
+        </a>
+      -->
+
+      <!-- EMPTY state (shown when data-state="empty") -->
+      <div class="pc-empty">
+        <div class="pc-empty-big">No discussions found yet</div>
+        <div class="pc-empty-sub">Nothing in r/Baruch or r/CUNY mentions this professor so far.</div>
+        <a id="pc-empty-search" href="#" target="_blank" rel="noopener">Search Reddit ↗</a> <!-- js hook: scoped search URL -->
+      </div>
+
+      <div class="pc-divider"></div>
+
+      <a class="pc-linkedin" id="pc-linkedin" href="#" target="_blank" rel="noopener"> <!-- js hook: URL -->
+        in&nbsp; Open on LinkedIn ↗
+      </a>
+
+    </div>
+
+    <footer class="pc-footer">Professor Companion · v0.1</footer>
+  </div>
+</aside>

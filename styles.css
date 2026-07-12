@@ -1,3 +1,291 @@
-body {
-    font-family: Arial, sans-serif;
+/* =====================================================
+   Professor Companion · styles.css
+   Owner: Jinge. All visual rules live here.
+   Injected inside the Shadow DOM root by content.js,
+   so nothing leaks into ratemyprofessors.com and
+   nothing from RMP leaks in.
+
+   State machine (set by content.js):
+     #pc-root[data-state="loading"]  → skeletons visible
+     #pc-root[data-state="loaded"]   → post cards visible
+     #pc-root[data-state="empty"]    → empty card visible
+     #pc-root.pc-collapsed           → only floating tab visible
+     #pc-root[data-theme="dark"]     → dark palette
+   ===================================================== */
+
+/* ---------- design tokens ---------- */
+#pc-root {
+  --pc-bg: #FDFDFC;
+  --pc-border: #E7E7E4;
+  --pc-ink: #1C1E24;
+  --pc-muted: #8A8D95;
+  --pc-card: #FFFFFF;
+  --pc-hover: #3B6FD4;
+  --pc-avatar-bg: #DBE7FB;
+  --pc-avatar-ink: #28508F;
+  --pc-green: #1E9C5A;
+  --pc-green-hover: #188A4E;
+  --pc-skeleton: #EDEDEA;
+  --pc-skeleton-hi: #F6F6F4;
+  --pc-menu-hl: #EEF3FD;
+  --pc-star: #F5B301;
+}
+#pc-root[data-theme="dark"] {
+  --pc-bg: #1B1B1D;
+  --pc-border: #2C2C30;
+  --pc-ink: #E8E9EC;
+  --pc-muted: #8A8D95;
+  --pc-card: #202024;
+  --pc-avatar-bg: #1F3A68;
+  --pc-avatar-ink: #CFE0FF;
+  --pc-skeleton: #2A2A2E;
+  --pc-skeleton-hi: #333338;
+  --pc-menu-hl: #22304A;
+}
+
+/* ---------- root positioning ---------- */
+#pc-root {
+  all: initial; /* reset anything inherited through the shadow boundary */
+  position: fixed;
+  top: 84px;
+  right: 16px;
+  z-index: 2147483000;
+  font-family: "DM Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--pc-ink);
+}
+#pc-root, #pc-root * { box-sizing: border-box; }
+
+/* ---------- main card ---------- */
+#pc-card {
+  width: 340px;
+  background: var(--pc-bg);
+  border: 1px solid var(--pc-border);
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgb(0 0 0 / 0.10);
+  overflow: hidden;
+  animation: pc-slidein 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes pc-slidein {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #pc-card { animation: none; }
+}
+
+/* ---------- header ---------- */
+.pc-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--pc-border);
+}
+.pc-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--pc-avatar-bg);
+  color: var(--pc-avatar-ink);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px;
+}
+.pc-idblock { min-width: 0; }
+.pc-name {
+  font-size: 16px; font-weight: 700; line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pc-school { font-size: 12.5px; color: var(--pc-muted); }
+.pc-actions { margin-left: auto; display: flex; gap: 2px; }
+.pc-iconbtn {
+  border: 0; background: none;
+  width: 28px; height: 28px; border-radius: 8px;
+  color: var(--pc-muted); font-size: 14px;
+  font-family: inherit; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.pc-iconbtn:hover { background: var(--pc-menu-hl); color: var(--pc-avatar-ink); }
+.pc-iconbtn:focus-visible { outline: 2px solid var(--pc-hover); outline-offset: 1px; }
+#pc-star-btn.pc-saved { color: var(--pc-star); }
+
+/* ---------- theme dropdown ---------- */
+.pc-theme-menu {
+  display: none;
+  position: absolute;
+  top: 52px; right: 44px;
+  background: var(--pc-card);
+  border: 1px solid var(--pc-border);
+  border-radius: 11px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+  padding: 6px;
+  min-width: 150px;
+  z-index: 5;
+}
+.pc-theme-menu.pc-open { display: block; }
+.pc-theme-menu button {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%;
+  border: 0; background: none;
+  font-family: inherit; font-size: 13px; color: var(--pc-ink);
+  padding: 8px 10px; border-radius: 8px;
+  cursor: pointer; text-align: left;
+}
+.pc-theme-menu button:hover { background: var(--pc-menu-hl); }
+.pc-theme-menu button .pc-check { visibility: hidden; color: var(--pc-avatar-ink); }
+.pc-theme-menu button.pc-selected {
+  background: var(--pc-menu-hl);
+  color: var(--pc-avatar-ink);
+  font-weight: 500;
+}
+.pc-theme-menu button.pc-selected .pc-check { visibility: visible; }
+.pc-theme-caption {
+  font-size: 11px; color: var(--pc-muted);
+  padding: 6px 10px 4px;
+}
+
+/* ---------- body ---------- */
+.pc-body {
+  padding: 14px 18px;
+  display: flex; flex-direction: column; gap: 11px;
+}
+.pc-label { font-size: 12.5px; color: var(--pc-muted); }
+
+/* post cards (created by renderSidebar) */
+.pc-post {
+  display: block;
+  background: var(--pc-card);
+  border: 1px solid var(--pc-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-decoration: none;
+  color: var(--pc-ink);
+}
+.pc-post:hover { border-color: var(--pc-hover); }
+.pc-post:focus-visible { outline: 2px solid var(--pc-hover); outline-offset: 2px; }
+.pc-meta  { font-size: 11.5px; color: var(--pc-muted); margin-bottom: 4px; }
+.pc-title { font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
+.pc-quote { font-size: 12.5px; color: var(--pc-muted); }
+#pc-posts { display: flex; flex-direction: column; gap: 11px; }
+
+/* ---------- skeletons (loading) ---------- */
+.pc-skeletons { display: flex; flex-direction: column; gap: 11px; }
+.pc-skel-card {
+  background: var(--pc-card);
+  border: 1px solid var(--pc-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.pc-skel {
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--pc-skeleton) 25%, var(--pc-skeleton-hi) 45%, var(--pc-skeleton) 65%);
+  background-size: 200% 100%;
+  animation: pc-shimmer 1.4s infinite linear;
+}
+@keyframes pc-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc-skel { animation: none; }
+}
+.pc-skel.h11 { height: 11px; }
+.pc-skel.h13 { height: 13px; }
+.pc-skel.w40 { width: 40%; }
+.pc-skel.w60 { width: 60%; }
+.pc-skel.w85 { width: 85%; }
+.pc-skel.w100 { width: 100%; }
+
+/* ---------- empty state ---------- */
+.pc-empty {
+  background: var(--pc-card);
+  border: 1px dashed var(--pc-border);
+  border-radius: 12px;
+  padding: 18px 14px;
+  text-align: center;
+}
+.pc-empty-big { font-size: 13.5px; font-weight: 700; margin-bottom: 3px; }
+.pc-empty-sub { font-size: 12.5px; color: var(--pc-muted); margin-bottom: 10px; }
+#pc-empty-search { font-size: 12.5px; font-weight: 500; color: var(--pc-hover); text-decoration: none; }
+#pc-empty-search:hover { text-decoration: underline; }
+
+/* ---------- divider + LinkedIn ---------- */
+.pc-divider { height: 1px; background: var(--pc-border); }
+.pc-linkedin {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--pc-green);
+  color: #fff; font-weight: 700; font-size: 13px;
+  border-radius: 11px;
+  padding: 11px;
+  text-decoration: none;
+}
+.pc-linkedin:hover { background: var(--pc-green-hover); }
+.pc-linkedin:focus-visible { outline: 2px solid var(--pc-hover); outline-offset: 2px; }
+
+/* ---------- footer ---------- */
+.pc-footer {
+  font-size: 11px; color: var(--pc-muted);
+  text-align: center;
+  padding: 2px 0 14px;
+}
+
+/* =====================================================
+   STATE VISIBILITY RULES
+   ===================================================== */
+
+/* loading: show skeletons, hide posts + empty */
+#pc-root[data-state="loading"] #pc-posts,
+#pc-root[data-state="loading"] .pc-empty { display: none; }
+
+/* loaded: show posts, hide skeletons + empty */
+#pc-root[data-state="loaded"] .pc-skeletons,
+#pc-root[data-state="loaded"] .pc-empty { display: none; }
+
+/* empty: show empty card, hide skeletons + posts */
+#pc-root[data-state="empty"] .pc-skeletons,
+#pc-root[data-state="empty"] #pc-posts { display: none; }
+
+/* =====================================================
+   COLLAPSED: floating tab
+   ===================================================== */
+#pc-tab {
+  display: none;
+  position: fixed;
+  top: 96px; right: 0;
+  align-items: center; gap: 7px;
+  background: var(--pc-bg);
+  border: 1px solid var(--pc-border);
+  border-right: 0;
+  border-radius: 12px 0 0 12px;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.10);
+  padding: 10px 12px 10px 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+#pc-tab:hover { border-color: var(--pc-hover); }
+.pc-tab-avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%; flex: none;
+  background: var(--pc-avatar-bg);
+  color: var(--pc-avatar-ink);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 11px;
+}
+.pc-tab-arrow { font-size: 11.5px; color: var(--pc-muted); }
+
+#pc-root.pc-collapsed #pc-card { display: none; }
+#pc-root.pc-collapsed #pc-tab { display: flex; }
+
+/* ---------- small screens: bottom sheet ---------- */
+@media (max-width: 900px) {
+  #pc-root { top: auto; right: 0; bottom: 0; left: 0; }
+  #pc-card {
+    width: 100%;
+    border-radius: 14px 14px 0 0;
+    border-left: 0; border-right: 0; border-bottom: 0;
+  }
+  #pc-tab { top: auto; bottom: 16px; }
 }
