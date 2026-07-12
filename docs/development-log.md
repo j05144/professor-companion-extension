@@ -1,53 +1,38 @@
 # Development Log
 
-This document tracks our progress, key decisions, challenges, and next steps throughout the project. Each team member should update this log after completing a milestone or significant task.
+This document tracks our progress, key decisions, challenges, and next steps throughout the project. Each team member adds a dated entry after completing a milestone or significant task.
 
 ---
 
 ## Project Status
 
-**Current Phase:** Planning & Setup
+**Current Phase:** Phase 2 | Sidebar Frontend
 
 **Current Direction:** Build a Chrome extension (MVP) first, then evaluate expanding into a standalone web application.
 
 ---
 
-# Sprint 1 | Project Setup
+# Work Log
 
-**Date:** July 5, 2026
+## 7/5/2026 | Jinge
+Completed: Project setup done. Created the private GitHub repo, connected it with VS Code, and cloned it locally. Built the initial structure: manifest.json, popup.html, popup.js, content.js, background.js, styles.css, plus assets/data/docs folders, README, and starter code. Made the first commit.
+Challenges: Used the wrong repository URL when cloning. Learned how GitHub, Git, and VS Code work together, where the local project folder lives, and what each core Chrome extension file is for.
+Next Steps: Load the extension into Chrome and verify it works. Research professor name detection. Design the sidebar. Finalize MVP features.
 
-### Goal
-Set up the development environment and initialize the project.
+## 7/9/2026 | Antony
+Completed: Phase 1 detection working. Extension runs only on RMP professor pages, logs professor name + school. Tested on 5 professors across 4 CUNY schools. Saved technical notes to docs/phase1-notes.md.
+Challenges: —
+Next Steps: Phase 2 sidebar shell. Sketch wireframe with Jinge first.
 
-### Completed (Jinge)
-- Created a private GitHub repository.
-- Connected GitHub with VS Code.
-- Cloned the repository locally.
-- Created the initial project structure.
-- Added the following files:
-  - `manifest.json`
-  - `popup.html`
-  - `popup.js`
-  - `content.js`
-  - `background.js`
-  - `styles.css`
-- Created the `assets`, `data`, and `docs` folders.
-- Added the initial README.
-- Added starter code to the extension files.
-- Made the first Git commit.
+## 7/12/2026 | Jinge
+Completed: Phase 2 frontend done. Confirmed design decisions with Antony (overlay, open first visit + remember choice, collapse to floating tab). Designed the missing wireframe states (loading, empty, collapsed) and committed both wireframes to /mockups. Built sidebar.html (full template, js hooks marked for content.js) and rewrote styles.css (light/dark themes, CSS state machine via data-state, skeletons, collapse, mobile layout). Tested all states locally with a gitignored preview page. Fixed popup.html charset bug. Notes in docs/phase2-notes.md.
+Challenges: Briefly edited a downloaded copy of styles.css instead of the project's file (had two tabs open). Cleaned up duplicate files between Downloads and the project folder. Git's LF/CRLF warnings turned out to be harmless.
+Next Steps: Antony wires the injection (web_accessible_resources + fetch into Shadow DOM + hardcoded post data). I do visual QA on a real RMP page once it lands, then we run the Phase 2 done checklist together.
 
-### Challenges
-- Used the wrong repository URL when cloning.
-- Learned how GitHub, Git, and VS Code work together.
-- Located the local project folder.
-- Learned the purpose of the core Chrome extension files.
-
-### Next Steps
-- Load the extension into Chrome.
-- Verify the extension works.
-- Research professor name detection.
-- Design the sidebar.
-- Finalize the MVP features.
+## 7/12/2026 | Antony
+Completed: 
+Challenges:
+Next Steps:
 
 ---
 
@@ -88,21 +73,9 @@ Set up the development environment and initialize the project.
 
 ---
 
-# Work Log Template
+# Entry Format
 
-## 7/9/2026 | Antony
-Completed: Phase 1 detection working. Extension runs only on RMP professor pages, logs professor name + school. Tested on 5 professors across 4 CUNY schools. Saved technical notes to docs/phase1-notes.md.
-Challenges: whatever actually confused you today (loading unpacked, the console, worktree thing, anything).
-Next Steps: Phase 2 sidebar shell. Sketch wireframe with Jinge first.
-
-### Completed
--
-
-### Challenges
--
-
-### Notes
--
-
-### Next Steps
--
+## M/D/YYYY | Name
+Completed: What actually got done, in one or two sentences.
+Challenges: What confused you or went wrong today.
+Next Steps: What's next for you or the team.
