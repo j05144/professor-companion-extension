@@ -10,7 +10,7 @@
 const REDDIT_MESSAGE_TYPE = "reddit-fetch-json";
 
 // Allow-list, not block-list: this worker fetches exactly one shape of URL
-// (HTTPS + www.reddit.com + a .json path) and refuses everything else. That
+// (HTTPS + old.reddit.com + a .json path) and refuses everything else. That
 // way a bug elsewhere in the extension can never turn this handler into an
 // open proxy that reads arbitrary sites with the extension's permissions.
 // Parsing with new URL() beats string checks: a startsWith() test can be
@@ -20,7 +20,7 @@ function isAllowedRedditUrl(raw) {
     const url = new URL(raw);
     return (
       url.protocol === "https:" &&
-      url.hostname === "www.reddit.com" &&
+      url.hostname === "old.reddit.com" &&
       url.pathname.endsWith(".json")
     );
   } catch {
