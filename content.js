@@ -197,6 +197,136 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (touched) applySettingsToSidebar();
 });
 
+// ---------- 2b. Reddit results → sidebar ----------
+// fetchRedditThreads comes from reddit.js, which the manifest loads into
+// this same isolated world just before content.js.
+
+const MAX_POSTS = 6;
+
+// Guards against out-of-order responses on SPA navigation: each search takes
+// a ticket, and only the holder of the LATEST ticket may touch the DOM.
+// Navigating anywhere (new professor or off professor pages) bumps the
+// counter, so a slow response for the previous professor is silently dropped
+// instead of rendering under the wrong name.
+let redditRequestId = 0;
+
+async function startRedditSearch(name, school) {
+  const requestId = ++redditRequestId;
+  try {
+    // On a cold page load, detection (a querySelector) usually beats the
+    // sidebar mount (two fetches + storage). Join the mount rather than
+    // racing it — mountSidebar is a singleton promise, so this never
+    // triggers a second mount.
+    await mountSidebar();
+    if (requestId !== redditRequestId) return;
+    showSearching();
+
+    const threads = await fetchRedditThreads(name, school);
+    if (requestId !== redditRequestId) return;
+
+    if (threads.length > 0) {
+      showResults(threads.slice(0, MAX_POSTS));
+    } else {
+      showEmpty(name, school, { failed: false });
+    }
+  } catch (err) {
+    if (requestId !== redditRequestId) return;
+    console.warn(`Professor Companion: Reddit search failed — ${err.message}`);
+    // Failure wears the same empty card, but the "Search Reddit" link below
+    // still gives the user a manual path to the data we couldn't fetch.
+    showEmpty(name, school, { failed: true });
+  }
+}
+
+function showSearching() {
+  if (!sidebarRoot) return;
+  sidebarRoot.dataset.state = "loading";
+  sidebarRoot.querySelector("#pc-posts").replaceChildren();
+  sidebarRoot.querySelector("#pc-count-label").textContent = "Reddit mentions · searching…";
+}
+
+function showResults(threads) {
+  if (!sidebarRoot) return;
+  const posts = sidebarRoot.querySelector("#pc-posts");
+  posts.replaceChildren();
+  for (const thread of threads) {
+    posts.append(buildPostCard(thread));
+  }
+  sidebarRoot.querySelector("#pc-count-label").textContent = `Reddit mentions · ${threads.length}`;
+  sidebarRoot.dataset.state = "loaded";
+}
+
+function showEmpty(name, school, { failed }) {
+  if (!sidebarRoot) return;
+  sidebarRoot.querySelector("#pc-posts").replaceChildren();
+  sidebarRoot.querySelector("#pc-count-label").textContent = failed
+    ? "Reddit mentions · unavailable"
+    : "Reddit mentions · 0";
+  // Same query our sitewide search uses, as a reddit.com URL the user can
+  // open themselves — set in both the zero-results and failure cases.
+  const query = encodeURIComponent(`"${name}" ${school}`);
+  sidebarRoot.querySelector("#pc-empty-search").href = `https://www.reddit.com/search/?q=${query}`;
+  sidebarRoot.dataset.state = "empty";
+}
+
+// Every piece of Reddit text lands via textContent, never innerHTML: titles
+// and snippets are untrusted input, and textContent is written into the DOM
+// as a text node — it can't be parsed as markup, so injection is impossible
+// by construction rather than by escaping discipline.
+function buildPostCard(thread) {
+  const card = document.createElement("a");
+  card.className = "pc-post";
+  // Belt and braces: reddit.js builds these hrefs itself, but external data
+  // never goes into an anchor without a scheme check.
+  card.href = thread.url.startsWith("https://") ? thread.url : "https://www.reddit.com/";
+  card.target = "_blank";
+  card.rel = "noopener noreferrer";
+
+  const meta = document.createElement("div");
+  meta.className = "pc-meta";
+  meta.textContent = `r/${thread.subreddit} · ${formatAge(thread.date)} · ▲ ${formatCount(thread.upvotes)}`;
+  card.append(meta);
+
+  const title = document.createElement("div");
+  title.className = "pc-title";
+  title.textContent = thread.title;
+  card.append(title);
+
+  // Link posts have no body text — skip the quote element entirely.
+  if (thread.snippet) {
+    const quote = document.createElement("div");
+    quote.className = "pc-quote";
+    quote.textContent = `“${thread.snippet}”`;
+    card.append(quote);
+  }
+
+  return card;
+}
+
+// "YYYY-MM-DD" → "2y ago" / "5mo ago" / "12d ago" / "today".
+function formatAge(dateStr) {
+  const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  if (!Number.isFinite(days) || days < 1) return "today";
+  if (days < 30) return `${days}d ago`;
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  return `${Math.floor(days / 365)}y ago`;
+}
+
+// 12 → "12", 4302 → "4.3k".
+function formatCount(n) {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "0";
+  return n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : String(n);
+}
+
+// Called when the URL path changes to a (new) professor page: back to
+// skeletons, wipe the previous professor's cards so results never bleed
+// across, and orphan any in-flight search.
+function resetSidebarForNavigation() {
+  redditRequestId++;
+  resetSidebarIdentity();
+  showSearching();
+}
+
 // ---------- 3. page scraping ----------
 // RMP is built with styled-components, so class names look like
 // "NameTitle__Name-dowf0z-0 cbZBiP". The hash parts change whenever RMP
@@ -292,6 +422,7 @@ function attemptDetection(force) {
   console.log(`Detected: ${found.name}, ${found.school}`);
   lastLogged = { path: watchedPath, name: found.name, school: found.school };
   updateSidebarIdentity(found.name, found.school);
+  startRedditSearch(found.name, found.school);
   cancelDetectionPass();
 }
 
@@ -313,9 +444,10 @@ function check() {
     const onProfessorPage = isProfessorPath(path);
     syncSidebarToPath(onProfessorPage);
     if (onProfessorPage) {
-      resetSidebarIdentity();
+      resetSidebarForNavigation();
       beginDetectionPass();
     } else {
+      redditRequestId++; // orphan any in-flight search for the page we left
       cancelDetectionPass();
     }
   } else if (awaitingDetection) {

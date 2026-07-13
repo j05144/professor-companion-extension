@@ -157,7 +157,7 @@ function makeSnippet(selftext) {
 // dropdown from "top" to "Professor Companion", then run e.g.
 //   await fetchRedditThreads("Jane Doe", "Baruch College")
 
-const REDDIT_TEST_MODE = true;
+const REDDIT_TEST_MODE = false;
 
 // Swap in professors you've verified on RMP — hits are most likely for
 // professors students actually talk about.
