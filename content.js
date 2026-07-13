@@ -1,4 +1,10 @@
-// Professor Companion — Phase 1.1: detection that survives client-side navigation.
+// Professor Companion — content script.
+//
+// Sections:
+//   1. Settings      — chrome.storage.local persistence (theme, collapsed)
+//   2. Sidebar       — fetch Jinge's sidebar.html template, mount in Shadow DOM
+//   3. Page scraping — professor name + school selectors
+//   4. Detection     — SPA-navigation-aware detection loop (Phase 1.1)
 //
 // RMP is a single-page app: clicking from one professor to another calls
 // history.pushState() and swaps the DOM in place — no page load happens, so
@@ -8,9 +14,190 @@
 // start a fresh detection pass. The isProfessorPath() gate keeps the
 // extension inert everywhere except professor pages.
 
-const DETECTION_TIMEOUT_MS = 15000;
+// ---------- 1. settings (chrome.storage.local) ----------
+// Two persisted keys. "auto" is the template's name for "follow the OS
+// setting" (what settings UIs usually call "system").
 
-// ---------- page scraping ----------
+const DEFAULT_SETTINGS = { theme: "auto", collapsed: false };
+
+let settings = { ...DEFAULT_SETTINGS };
+
+async function loadSettings() {
+  // Passing the defaults object to get() merges stored values over it, so
+  // missing keys (first run) come back as their defaults — no undefined
+  // checks needed anywhere else.
+  settings = await chrome.storage.local.get(DEFAULT_SETTINGS);
+}
+
+function saveSetting(key, value) {
+  settings[key] = value;
+  // Fire-and-forget: the in-memory copy above is already correct, and the
+  // storage.onChanged listener below keeps other tabs in sync.
+  chrome.storage.local.set({ [key]: value });
+}
+
+// ---------- 2. sidebar ----------
+
+let sidebarHost = null;  // page-DOM <div> that owns the shadow root
+let sidebarRoot = null;  // #pc-root <aside> inside the shadow root
+let mountPromise = null; // guards against two concurrent mounts
+
+const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+
+// The stylesheet only knows data-theme="light|dark", so "auto" is resolved
+// here — the template's caption ("Auto matches your device setting") is
+// implemented by this line plus the matchMedia listener below.
+function resolvedTheme() {
+  if (settings.theme === "auto") return prefersDark.matches ? "dark" : "light";
+  return settings.theme;
+}
+
+// Single writer for settings → DOM. Idempotent, so it's safe to call from
+// every path that changes state (clicks, storage sync, OS theme flips).
+function applySettingsToSidebar() {
+  if (!sidebarRoot) return;
+  sidebarRoot.dataset.theme = resolvedTheme();
+  sidebarRoot.classList.toggle("pc-collapsed", settings.collapsed);
+  for (const btn of sidebarRoot.querySelectorAll("[data-theme-choice]")) {
+    btn.classList.toggle("pc-selected", btn.dataset.themeChoice === settings.theme);
+  }
+}
+
+async function mountSidebar() {
+  if (mountPromise) return mountPromise;
+
+  mountPromise = (async () => {
+    // Settings and both extension files load in parallel. The fetches need
+    // the files listed in web_accessible_resources: a content script's
+    // fetch runs as the *page's* origin, and pages can only read extension
+    // files that the manifest explicitly exposes to them.
+    const [, templateHtml, cssText] = await Promise.all([
+      loadSettings(),
+      fetch(chrome.runtime.getURL("sidebar.html")).then((r) => r.text()),
+      fetch(chrome.runtime.getURL("styles.css")).then((r) => r.text()),
+    ]);
+
+    // Shadow DOM gives the sidebar its own style scope: RMP's CSS can't
+    // reach in, ours can't leak out (styles.css counts on this).
+    sidebarHost = document.createElement("div");
+    sidebarHost.id = "pc-host";
+    const shadow = sidebarHost.attachShadow({ mode: "open" });
+    shadow.innerHTML = `<style>${cssText}</style>${templateHtml}`;
+    sidebarRoot = shadow.getElementById("pc-root");
+
+    wireSidebarControls(shadow);
+
+    // Order matters: stored settings are applied while the host is still
+    // detached, so the sidebar's very first paint is already in the right
+    // theme and collapse state — no light-mode flash, no expand-then-snap.
+    applySettingsToSidebar();
+    document.body.append(sidebarHost);
+
+    // If detection already finished before the mount did (likely on a full
+    // page load: two fetches lose to a querySelector), backfill the header.
+    if (lastLogged && lastLogged.path === location.pathname) {
+      updateSidebarIdentity(lastLogged.name, lastLogged.school);
+    }
+  })();
+
+  return mountPromise;
+}
+
+function wireSidebarControls(shadow) {
+  const themeMenu = shadow.getElementById("pc-theme-menu");
+
+  shadow.getElementById("pc-theme-btn").addEventListener("click", () => {
+    themeMenu.classList.toggle("pc-open");
+  });
+
+  for (const btn of themeMenu.querySelectorAll("[data-theme-choice]")) {
+    btn.addEventListener("click", () => {
+      saveSetting("theme", btn.dataset.themeChoice);
+      applySettingsToSidebar();
+      themeMenu.classList.remove("pc-open");
+    });
+  }
+
+  shadow.getElementById("pc-collapse-btn").addEventListener("click", () => {
+    saveSetting("collapsed", true);
+    applySettingsToSidebar();
+  });
+  shadow.getElementById("pc-tab").addEventListener("click", () => {
+    saveSetting("collapsed", false);
+    applySettingsToSidebar();
+  });
+
+  // Clicking anywhere else in the sidebar closes the theme menu.
+  shadow.addEventListener("click", (event) => {
+    if (!event.target.closest("#pc-theme-menu") && !event.target.closest("#pc-theme-btn")) {
+      themeMenu.classList.remove("pc-open");
+    }
+  });
+}
+
+// Show on professor pages, hide (not unmount) everywhere else — remounting
+// on every navigation would refetch the template for nothing.
+function syncSidebarToPath(onProfessorPage) {
+  if (onProfessorPage) {
+    if (sidebarHost) {
+      sidebarHost.hidden = false;
+    } else {
+      mountSidebar().catch((err) => {
+        console.warn(`Professor Companion: sidebar failed to mount — ${err.message}`);
+      });
+    }
+  } else if (sidebarHost) {
+    sidebarHost.hidden = true;
+  }
+}
+
+function initialsFrom(name) {
+  const parts = name.split(/\s+/).filter(Boolean);
+  const first = parts[0]?.[0] ?? "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return (first + last).toUpperCase() || "··";
+}
+
+function updateSidebarIdentity(name, school) {
+  if (!sidebarRoot) return;
+  sidebarRoot.querySelector("#pc-name").textContent = name;
+  sidebarRoot.querySelector("#pc-school").textContent = school;
+  const initials = initialsFrom(name);
+  sidebarRoot.querySelector("#pc-initials").textContent = initials;
+  sidebarRoot.querySelector("#pc-tab-initials").textContent = initials;
+}
+
+// Between professors (SPA navigation) the header would otherwise keep
+// showing the previous professor while the new one loads.
+function resetSidebarIdentity() {
+  if (!sidebarRoot) return;
+  sidebarRoot.querySelector("#pc-name").textContent = "Loading…";
+  sidebarRoot.querySelector("#pc-school").textContent = "";
+  sidebarRoot.querySelector("#pc-initials").textContent = "··";
+  sidebarRoot.querySelector("#pc-tab-initials").textContent = "··";
+}
+
+// OS theme flipped while we're in "auto": re-resolve.
+prefersDark.addEventListener("change", () => {
+  if (settings.theme === "auto") applySettingsToSidebar();
+});
+
+// A setting changed in another context — a second RMP tab, or the popup one
+// day. Mirror it here so every tab agrees. (This also fires in the tab that
+// made the change; applySettingsToSidebar is idempotent, so that's fine.)
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return;
+  let touched = false;
+  for (const key of Object.keys(DEFAULT_SETTINGS)) {
+    if (key in changes) {
+      settings[key] = changes[key].newValue;
+      touched = true;
+    }
+  }
+  if (touched) applySettingsToSidebar();
+});
+
+// ---------- 3. page scraping ----------
 // RMP is built with styled-components, so class names look like
 // "NameTitle__Name-dowf0z-0 cbZBiP". The hash parts change whenever RMP
 // redeploys, but the "NameTitle__Name" prefix is stable — so all selectors
@@ -57,7 +244,9 @@ function readProfessor() {
   return name && school ? { name, school } : null;
 }
 
-// ---------- navigation-aware detection ----------
+// ---------- 4. navigation-aware detection ----------
+
+const DETECTION_TIMEOUT_MS = 15000;
 
 function isProfessorPath(pathname) {
   return pathname.startsWith("/professor/");
@@ -102,6 +291,7 @@ function attemptDetection(force) {
 
   console.log(`Detected: ${found.name}, ${found.school}`);
   lastLogged = { path: watchedPath, name: found.name, school: found.school };
+  updateSidebarIdentity(found.name, found.school);
   cancelDetectionPass();
 }
 
@@ -120,7 +310,10 @@ function check() {
   const path = location.pathname;
   if (path !== watchedPath) {
     watchedPath = path;
-    if (isProfessorPath(path)) {
+    const onProfessorPage = isProfessorPath(path);
+    syncSidebarToPath(onProfessorPage);
+    if (onProfessorPage) {
+      resetSidebarIdentity();
       beginDetectionPass();
     } else {
       cancelDetectionPass();
