@@ -1,15 +1,21 @@
 {
   "manifest_version": 3,
   "name": "Professor Companion",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Enhances professor pages with publicly available academic information.",
   "permissions": ["activeTab"],
+  "host_permissions": [
+    "https://www.reddit.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [
         "https://*.ratemyprofessors.com/*"
       ],
-      "js": ["content.js"],
+      "js": ["reddit.js", "content.js"],
       "run_at": "document_idle"
     }
   ],
