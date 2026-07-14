@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Professor Companion",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "Enhances professor pages with publicly available academic information.",
   "permissions": ["activeTab", "storage"],
   "web_accessible_resources": [

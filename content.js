@@ -18,7 +18,15 @@
 // Two persisted keys. "auto" is the template's name for "follow the OS
 // setting" (what settings UIs usually call "system").
 
-const DEFAULT_SETTINGS = { theme: "auto", collapsed: false };
+// position.card = {left, top} px of the expanded card (null → the CSS
+// default top-right slot); position.tabY = top px of the collapsed tab on
+// its right-edge rail (null → CSS default). One key, so card and tab
+// positions travel together through storage and the onChanged sync.
+const DEFAULT_SETTINGS = {
+  theme: "auto",
+  collapsed: false,
+  position: { card: null, tabY: null },
+};
 
 let settings = { ...DEFAULT_SETTINGS };
 
@@ -44,6 +52,10 @@ let mountPromise = null; // guards against two concurrent mounts
 
 const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
 
+// Mirrors styles.css's bottom-sheet breakpoint. Below it the sidebar is a
+// full-width sheet: dragging is disabled and stored positions are ignored.
+const bottomSheet = window.matchMedia("(max-width: 900px)");
+
 // The stylesheet only knows data-theme="light|dark", so "auto" is resolved
 // here — the template's caption ("Auto matches your device setting") is
 // implemented by this line plus the matchMedia listener below.
@@ -61,6 +73,7 @@ function applySettingsToSidebar() {
   for (const btn of sidebarRoot.querySelectorAll("[data-theme-choice]")) {
     btn.classList.toggle("pc-selected", btn.dataset.themeChoice === settings.theme);
   }
+  applyPositions();
 }
 
 async function mountSidebar() {
@@ -123,9 +136,22 @@ function wireSidebarControls(shadow) {
     applySettingsToSidebar();
   });
   shadow.getElementById("pc-tab").addEventListener("click", () => {
-    saveSetting("collapsed", false);
-    applySettingsToSidebar();
+    // A drag that ends on the tab still fires a click — don't expand for it.
+    if (suppressNextTabClick) {
+      suppressNextTabClick = false;
+      return;
+    }
+    // Deferred so a double-click (reset the tab's slot) can cancel it: the
+    // tab disappears the moment it expands, so an immediate expand would
+    // swallow the second click of every double-click.
+    clearTimeout(pendingTabExpand);
+    pendingTabExpand = setTimeout(() => {
+      saveSetting("collapsed", false);
+      applySettingsToSidebar();
+    }, 250);
   });
+
+  wireDragging(shadow);
 
   // Clicking anywhere else in the sidebar closes the theme menu.
   shadow.addEventListener("click", (event) => {
@@ -133,6 +159,169 @@ function wireSidebarControls(shadow) {
       themeMenu.classList.remove("pc-open");
     }
   });
+}
+
+// ---------- 2a. dragging ----------
+
+const DRAG_THRESHOLD_PX = 4;   // less movement than this is a click, not a drag
+const MIN_VISIBLE_PX = 48;     // how much card must remain on-screen after release
+const TAB_EDGE_MARGIN_PX = 8;  // breathing room at the rail's ends
+
+// Set when a tab drag just ended: the browser fires a click on release
+// (pointer went down and up on the same element), which must not expand.
+let suppressNextTabClick = false;
+// Pending single-click expand of the tab (deferred for dblclick detection).
+let pendingTabExpand = null;
+
+function clampNumber(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+// Drag feedback is deliberately inline style, not styles.css: it's transient
+// interaction state owned by JS, not a designed state Jinge should have to
+// model — and half of it must apply OUTSIDE the shadow root anyway, because
+// it's the page underneath that keeps trying to select RMP's text while the
+// pointer sweeps across it.
+function beginDragFeedback() {
+  document.documentElement.style.userSelect = "none";
+  document.documentElement.style.cursor = "grabbing";
+  if (sidebarRoot) sidebarRoot.style.cursor = "grabbing";
+}
+
+function endDragFeedback() {
+  document.documentElement.style.userSelect = "";
+  document.documentElement.style.cursor = "";
+  if (sidebarRoot) sidebarRoot.style.cursor = "";
+}
+
+// Projects settings.position onto the DOM. Inline styles beat styles.css in
+// the cascade, so clearing them (position null, or bottom-sheet mode) hands
+// control straight back to Jinge's CSS defaults — that's also all a
+// double-click reset has to do.
+function applyPositions() {
+  if (!sidebarRoot) return;
+  const pos = settings.position ?? {};
+  const custom = !bottomSheet.matches;
+
+  if (custom && pos.card) {
+    sidebarRoot.style.left = `${pos.card.left}px`;
+    sidebarRoot.style.top = `${pos.card.top}px`;
+    sidebarRoot.style.right = "auto"; // release the CSS "right: 16px" anchor
+  } else {
+    sidebarRoot.style.left = "";
+    sidebarRoot.style.top = "";
+    sidebarRoot.style.right = "";
+  }
+
+  const tab = sidebarRoot.querySelector("#pc-tab");
+  if (custom && typeof pos.tabY === "number") {
+    tab.style.top = `${pos.tabY}px`;
+  } else {
+    tab.style.top = "";
+  }
+}
+
+function wireDragging(shadow) {
+  const header = shadow.querySelector(".pc-header");
+  const tab = shadow.getElementById("pc-tab");
+
+  header.addEventListener("pointerdown", (event) => {
+    if (bottomSheet.matches || event.button !== 0) return;
+    // The header hosts the theme/star/collapse buttons and the theme menu;
+    // drags must not start from any of them.
+    if (event.target.closest(".pc-iconbtn") || event.target.closest("#pc-theme-menu")) return;
+
+    // The card's rect is the visual truth no matter where the current
+    // position came from (CSS right-anchor or stored inline left/top).
+    const rect = sidebarRoot.querySelector("#pc-card").getBoundingClientRect();
+    startDrag(header, event, (dx, dy, done) => {
+      if (done) {
+        // Clamp on release only — free movement feels right mid-drag. Keep
+        // at least MIN_VISIBLE_PX of the card in the viewport horizontally,
+        // and never let the header (the only drag handle!) escape the top.
+        const card = {
+          left: clampNumber(rect.left + dx, MIN_VISIBLE_PX - rect.width, window.innerWidth - MIN_VISIBLE_PX),
+          top: clampNumber(rect.top + dy, 0, window.innerHeight - MIN_VISIBLE_PX),
+        };
+        saveSetting("position", { ...settings.position, card });
+        applyPositions();
+      } else {
+        sidebarRoot.style.left = `${rect.left + dx}px`;
+        sidebarRoot.style.top = `${rect.top + dy}px`;
+        sidebarRoot.style.right = "auto";
+      }
+    });
+  });
+
+  header.addEventListener("dblclick", (event) => {
+    if (event.target.closest(".pc-iconbtn") || event.target.closest("#pc-theme-menu")) return;
+    saveSetting("position", { ...settings.position, card: null });
+    applyPositions();
+  });
+
+  tab.addEventListener("pointerdown", (event) => {
+    if (bottomSheet.matches || event.button !== 0) return;
+    const rect = tab.getBoundingClientRect();
+    startDrag(tab, event, (dx, dy, done) => {
+      // Vertical rail: dx is ignored and the CSS "right: 0" dock never moves.
+      // Clamped live — a rail with hard stops reads better than free flight.
+      const top = clampNumber(
+        rect.top + dy,
+        TAB_EDGE_MARGIN_PX,
+        window.innerHeight - rect.height - TAB_EDGE_MARGIN_PX
+      );
+      if (done) {
+        suppressNextTabClick = true;
+        saveSetting("position", { ...settings.position, tabY: top });
+        applyPositions();
+      } else {
+        tab.style.top = `${top}px`;
+      }
+    });
+  });
+
+  tab.addEventListener("dblclick", () => {
+    clearTimeout(pendingTabExpand); // this was a reset, not an expand
+    saveSetting("position", { ...settings.position, tabY: null });
+    applyPositions();
+  });
+}
+
+// Shared drag engine. Calls apply(dx, dy, done=false) on every move past the
+// threshold, then once more with done=true on release. setPointerCapture
+// routes all further pointer events to the handle even when the pointer
+// outruns the element mid-drag — no document-level listeners needed, and
+// nothing leaks: every path through onEnd removes all three listeners.
+function startDrag(handle, downEvent, apply) {
+  const startX = downEvent.clientX;
+  const startY = downEvent.clientY;
+  let moved = false;
+
+  const onMove = (ev) => {
+    const dx = ev.clientX - startX;
+    const dy = ev.clientY - startY;
+    if (!moved) {
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return; // still just a click
+      moved = true;
+      beginDragFeedback();
+    }
+    apply(dx, dy, false);
+  };
+
+  const onEnd = (ev) => {
+    handle.removeEventListener("pointermove", onMove);
+    handle.removeEventListener("pointerup", onEnd);
+    handle.removeEventListener("pointercancel", onEnd);
+    if (!moved) return;
+    endDragFeedback();
+    apply(ev.clientX - startX, ev.clientY - startY, true);
+  };
+
+  handle.setPointerCapture(downEvent.pointerId);
+  handle.addEventListener("pointermove", onMove);
+  handle.addEventListener("pointerup", onEnd);
+  handle.addEventListener("pointercancel", onEnd);
+  downEvent.preventDefault(); // keep the browser from starting a text selection
 }
 
 // Show on professor pages, hide (not unmount) everywhere else — remounting
