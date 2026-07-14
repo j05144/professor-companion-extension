@@ -404,19 +404,24 @@ const MAX_POSTS = 10; // #pc-posts is getting a scrollable body (Jinge), so more
 // instead of rendering under the wrong name.
 let redditRequestId = 0;
 
-async function startRedditSearch(name, school) {
+async function startRedditSearch(name, school, professorId) {
   const requestId = ++redditRequestId;
+  // Render only while BOTH hold: we are the newest search (the ticket orders
+  // our own requests) and the URL still shows the professor this search was
+  // keyed to (the ID pins the result to the page, whatever else happened).
+  const stillCurrent = () =>
+    requestId === redditRequestId && professorIdFrom(location.pathname) === professorId;
   try {
     // On a cold page load, detection (a querySelector) usually beats the
     // sidebar mount (two fetches + storage). Join the mount rather than
     // racing it — mountSidebar is a singleton promise, so this never
     // triggers a second mount.
     await mountSidebar();
-    if (requestId !== redditRequestId) return;
+    if (!stillCurrent()) return;
     showSearching();
 
     const threads = await fetchRedditThreads(name, school);
-    if (requestId !== redditRequestId) return;
+    if (!stillCurrent()) return;
 
     if (threads.length > 0) {
       showResults(threads.slice(0, MAX_POSTS));
@@ -424,7 +429,7 @@ async function startRedditSearch(name, school) {
       showEmpty(name, school, { failed: false });
     }
   } catch (err) {
-    if (requestId !== redditRequestId) return;
+    if (!stillCurrent()) return;
     console.warn(`Professor Companion: Reddit search failed — ${err.message}`);
     // Failure wears the same empty card, but the "Search Reddit" link below
     // still gives the user a manual path to the data we couldn't fetch.
@@ -458,8 +463,12 @@ function showEmpty(name, school, { failed }) {
     : "Reddit mentions · 0";
   // Same query our sitewide search uses, as a reddit.com URL the user can
   // open themselves — set in both the zero-results and failure cases.
-  const query = encodeURIComponent(`"${name}" ${school}`);
-  sidebarRoot.querySelector("#pc-empty-search").href = `https://www.reddit.com/search/?q=${query}`;
+  // Degrades when detection never confirmed a name (timeout give-up):
+  // fall back to Reddit's plain search page rather than a stale query.
+  const query = name ? encodeURIComponent(`"${name}"${school ? ` ${school}` : ""}`) : "";
+  sidebarRoot.querySelector("#pc-empty-search").href = query
+    ? `https://www.reddit.com/search/?q=${query}`
+    : "https://www.reddit.com/search/";
   sidebarRoot.dataset.state = "empty";
 }
 
@@ -553,39 +562,41 @@ function getFromPageTitle() {
   return match ? { name: match[1].trim(), school: match[2].trim() } : null;
 }
 
-function readProfessor() {
-  let name = getNameFromDom();
-  let school = getSchoolFromDom();
-
-  if (!name || !school) {
-    const fromTitle = getFromPageTitle();
-    if (fromTitle) {
-      name = name || fromTitle.name;
-      school = school || fromTitle.school;
-    }
-  }
-
-  return name && school ? { name, school } : null;
-}
-
 // ---------- 4. navigation-aware detection ----------
 
 const DETECTION_TIMEOUT_MS = 15000;
 
+// "/professor/2302328" → "2302328"; anything else → null. The ID is the
+// page's identity: detection passes and Reddit searches are keyed to it, so
+// nothing read or fetched for one professor can ever render under another.
+function professorIdFrom(pathname) {
+  const match = pathname.match(/^\/professor\/(\d+)/);
+  return match ? match[1] : null;
+}
+
 function isProfessorPath(pathname) {
-  return pathname.startsWith("/professor/");
+  return professorIdFrom(pathname) !== null;
 }
 
 let watchedPath = null;        // pathname we most recently saw in the URL bar
 let awaitingDetection = false; // a detection pass is in progress
 let timeoutId = null;
-let lastLogged = null;         // { path, name, school } of the last successful log
+let lastLogged = null;         // { path, professorId, name, school } of the last success
+let navSnapshot = null;        // { initial, title, name } captured as each pass begins
 
-function beginDetectionPass() {
+function beginDetectionPass(isInitial) {
   awaitingDetection = true;
+  // Snapshot what's on screen right now. On an SPA navigation that's the
+  // page we came FROM — React hasn't re-rendered yet — so no DOM or title
+  // read is trusted until it differs from this snapshot.
+  navSnapshot = {
+    initial: isInitial,
+    title: document.title,
+    name: getNameFromDom(),
+  };
   clearTimeout(timeoutId);
   timeoutId = setTimeout(onDetectionTimeout, DETECTION_TIMEOUT_MS);
-  attemptDetection(false);
+  attemptDetection();
 }
 
 function cancelDetectionPass() {
@@ -593,39 +604,57 @@ function cancelDetectionPass() {
   clearTimeout(timeoutId);
 }
 
-function attemptDetection(force) {
+function attemptDetection() {
   if (!awaitingDetection) return;
 
-  const found = readProfessor();
-  if (!found) return;
+  const professorId = professorIdFrom(watchedPath);
 
-  // Staleness guard: right after a client-side navigation the URL already
-  // points at the NEW professor, but React is often still showing the OLD
-  // one while it fetches data. If we read exactly the name+school we last
-  // logged but the path is different, assume it's the old page still on
-  // screen and keep waiting for the re-render. (The timeout handler forces
-  // the log through in the rare legit case of two consecutive profiles with
-  // an identical name and school.)
-  const looksStale =
-    lastLogged &&
-    lastLogged.name === found.name &&
-    lastLogged.school === found.school &&
-    lastLogged.path !== watchedPath;
-  if (looksStale && !force) return;
+  // DOM reads are trusted as-is on the initial pass (the served HTML belongs
+  // to this URL). After an SPA navigation the header on screen is the
+  // PREVIOUS page's until React re-renders, so nothing counts until the NAME
+  // differs from the navigation-time snapshot. The name is the gate — the
+  // school can legitimately stay identical when browsing within one school,
+  // and a school read alongside a stale name is equally stale.
+  let name = getNameFromDom();
+  let school = getSchoolFromDom();
+  if (!navSnapshot.initial && name !== null && name === navSnapshot.name) {
+    name = null;
+    school = null;
+  }
 
-  console.log(`Detected: ${found.name}, ${found.school}`);
-  lastLogged = { path: watchedPath, name: found.name, school: found.school };
-  updateSidebarIdentity(found.name, found.school);
-  startRedditSearch(found.name, found.school);
+  // Title fallback, hardened: getFromPageTitle already requires the
+  // "X at Y | Rate My Professors" pattern, but after an SPA navigation the
+  // title must ALSO have changed since navigation began — the old page's
+  // title matching the pattern is exactly the "Search professors" bug.
+  if ((!name || !school) && (navSnapshot.initial || document.title !== navSnapshot.title)) {
+    const fromTitle = getFromPageTitle();
+    if (fromTitle) {
+      name = name || fromTitle.name;
+      school = school || fromTitle.school;
+    }
+  }
+
+  if (!name || !school) return; // not confirmable yet; the observer retries
+
+  console.log(`Detected: ${name}, ${school}`);
+  lastLogged = { path: watchedPath, professorId, name, school };
+  updateSidebarIdentity(name, school);
+  startRedditSearch(name, school, professorId);
   cancelDetectionPass();
 }
 
 function onDetectionTimeout() {
-  attemptDetection(true);
-  if (awaitingDetection) {
-    awaitingDetection = false;
-    console.warn("Professor Companion: no professor info found — giving up.");
-  }
+  if (!awaitingDetection) return;
+  awaitingDetection = false;
+  // Give up rather than force-accept: a read that still can't clear the
+  // staleness gates after 15 seconds is more likely wrong than late. The
+  // empty card keeps the manual search link as an escape hatch — and even
+  // that only borrows the DOM's name if it clears the same staleness gate,
+  // so the link can't search for the previous page's professor.
+  console.warn("Professor Companion: could not confirm professor info — giving up.");
+  let name = getNameFromDom();
+  if (!navSnapshot.initial && name === navSnapshot.name) name = null;
+  showEmpty(name, getSchoolFromDom(), { failed: true });
 }
 
 // Runs on every DOM mutation batch (and on popstate). Cheap when idle: a
@@ -634,18 +663,22 @@ function onDetectionTimeout() {
 function check() {
   const path = location.pathname;
   if (path !== watchedPath) {
+    // First run ever = the script was just injected, so the DOM genuinely
+    // belongs to this URL; every later path change is an SPA navigation
+    // where the on-screen content still belongs to the previous page.
+    const isInitial = watchedPath === null;
     watchedPath = path;
     const onProfessorPage = isProfessorPath(path);
     syncSidebarToPath(onProfessorPage);
     if (onProfessorPage) {
       resetSidebarForNavigation();
-      beginDetectionPass();
+      beginDetectionPass(isInitial);
     } else {
       redditRequestId++; // orphan any in-flight search for the page we left
       cancelDetectionPass();
     }
   } else if (awaitingDetection) {
-    attemptDetection(false);
+    attemptDetection();
   }
 }
 
