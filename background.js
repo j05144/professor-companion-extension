@@ -10,17 +10,24 @@
 const REDDIT_MESSAGE_TYPE = "reddit-fetch-json";
 
 // Allow-list, not block-list: this worker fetches exactly one shape of URL
-// (HTTPS + old.reddit.com + a .json path) and refuses everything else. That
-// way a bug elsewhere in the extension can never turn this handler into an
-// open proxy that reads arbitrary sites with the extension's permissions.
+// (HTTPS + a known Reddit host + a .json path) and refuses everything else.
+// That way a bug elsewhere in the extension can never turn this handler into
+// an open proxy that reads arbitrary sites with the extension's permissions.
 // Parsing with new URL() beats string checks: a startsWith() test can be
 // fooled by hosts like "www.reddit.com.evil.com".
+//
+// Both Reddit frontends serve the same .json API, so both are allowed:
+// reddit.js (REDDIT_API_BASE) can switch hosts without a lockstep edit here.
+// Every hostname in this set must also be granted in manifest.json's
+// host_permissions, or the fetch passes validation and then dies on CORS.
+const ALLOWED_API_HOSTNAMES = new Set(["old.reddit.com", "www.reddit.com"]);
+
 function isAllowedRedditUrl(raw) {
   try {
     const url = new URL(raw);
     return (
       url.protocol === "https:" &&
-      url.hostname === "old.reddit.com" &&
+      ALLOWED_API_HOSTNAMES.has(url.hostname) &&
       url.pathname.endsWith(".json")
     );
   } catch {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Professor Companion",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Enhances professor pages with publicly available academic information.",
   "permissions": ["activeTab", "storage"],
   "web_accessible_resources": [
@@ -11,7 +11,8 @@
     }
   ],
   "host_permissions": [
-    "https://old.reddit.com/*"
+    "https://old.reddit.com/*",
+    "https://www.reddit.com/*"
   ],
   "background": {
     "service_worker": "background.js"
