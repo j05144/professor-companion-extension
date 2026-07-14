@@ -148,10 +148,29 @@ function parseSearchResults(listing) {
 
 function makeSnippet(selftext) {
   // Link posts have no body — selftext is "" — so the snippet may be empty.
-  const text = (selftext ?? "").replace(/\s+/g, " ").trim();
-  return text.length > SNIPPET_MAX_CHARS
-    ? `${text.slice(0, SNIPPET_MAX_CHARS - 1)}…`
-    : text;
+  //
+  // Reddit bodies are markdown; the card shows plain prose, so strip the
+  // common markup instead of rendering it raw. This is COSMETIC cleanup,
+  // not a security layer — the render side already writes snippets with
+  // textContent, which is what makes untrusted text safe. Best-effort by
+  // design: rare constructs (tables, nested emphasis) degrade gracefully
+  // into slightly odd prose, never into broken cards.
+  let text = selftext ?? "";
+  text = text.replace(/\[([^\]]*)\]\(([^)]*)\)/g, "$1"); // [text](url) → text, BEFORE bare-URL pass
+  text = text.replace(/(\*\*|__)(.*?)\1/g, "$2");        // **bold** / __bold__ → bold
+  text = text.replace(/(\*|_)(?=\S)(.*?)(?<=\S)\1/g, "$2"); // *italics* / _italics_ → italics
+  text = text.replace(/https?:\/\/\S+/g, "");            // bare URLs contribute nothing to a preview
+  text = text.replace(/\s+/g, " ").trim();
+
+  if (text.length <= SNIPPET_MAX_CHARS) return text;
+
+  // Truncate at a word boundary so cards never end mid-word — unless the
+  // last space is so early the snippet would collapse (one giant token),
+  // in which case a hard cut is the lesser evil.
+  const cut = text.slice(0, SNIPPET_MAX_CHARS);
+  const lastSpace = cut.lastIndexOf(" ");
+  const kept = lastSpace > SNIPPET_MAX_CHARS * 0.6 ? cut.slice(0, lastSpace) : cut;
+  return `${kept.trimEnd()}…`;
 }
 
 // ---------- dev test harness ----------
