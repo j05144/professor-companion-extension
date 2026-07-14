@@ -371,6 +371,11 @@ prefersDark.addEventListener("change", () => {
   if (settings.theme === "auto") applySettingsToSidebar();
 });
 
+// Crossing the bottom-sheet breakpoint (resize/zoom): stored positions must
+// switch off below it and come back above it — applyPositions handles both
+// directions by clearing or re-setting the inline styles.
+bottomSheet.addEventListener("change", () => applyPositions());
+
 // A setting changed in another context — a second RMP tab, or the popup one
 // day. Mirror it here so every tab agrees. (This also fires in the tab that
 // made the change; applySettingsToSidebar is idempotent, so that's fine.)
@@ -390,7 +395,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 // fetchRedditThreads comes from reddit.js, which the manifest loads into
 // this same isolated world just before content.js.
 
-const MAX_POSTS = 6;
+const MAX_POSTS = 10; // #pc-posts is getting a scrollable body (Jinge), so more fit
 
 // Guards against out-of-order responses on SPA navigation: each search takes
 // a ticket, and only the holder of the LATEST ticket may touch the DOM.
