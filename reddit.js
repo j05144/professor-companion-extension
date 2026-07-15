@@ -20,13 +20,14 @@ const CUNY_SUBREDDITS = ["Baruch", "CUNY", "hunter"];
 const RESULTS_PER_SEARCH = 15; // per request; Reddit caps limit at 100
 const SNIPPET_MAX_CHARS = 200;
 
-// API host for search fetches. old.reddit.com serves the same .json
-// endpoints as www.reddit.com but sits on the legacy stack, which (as of
-// 2026-07 testing) doesn't hard-403 extension fetches the way www does.
-// User-facing links (permalinks, fallback search) still point at www.
-// Keep in sync with the allow-list in background.js and host_permissions
-// in manifest.json — all three must name the same host.
-const REDDIT_API_BASE = "https://old.reddit.com";
+// API host for search fetches. www and old serve the same .json endpoints,
+// but Reddit's bot gating has flip-flopped between them (www 403'd us on
+// 2026-07-13; old 403'd us on 2026-07-14 while www recovered). Both hosts
+// are pre-cleared in background.js's allow-list and the manifest's
+// host_permissions, so when it flips again this constant is the ONLY line
+// that changes. User-facing links (permalinks, fallback search) always
+// point at www regardless.
+const REDDIT_API_BASE = "https://www.reddit.com";
 
 // Keep in sync with background.js (content scripts and the service worker
 // don't share scope, so the constant is declared in both files).
