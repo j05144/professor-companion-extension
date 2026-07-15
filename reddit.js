@@ -33,9 +33,31 @@ const REDDIT_API_BASE = "https://www.reddit.com";
 // don't share scope, so the constant is declared in both files).
 const REDDIT_MESSAGE_TYPE = "reddit-fetch-json";
 
+// ---------- session cache ----------
+// Repeat views and SPA back-and-forth were re-hitting Reddit on every
+// navigation; our own browsing volume is a plausible 403 trigger, so fewer
+// requests is self-defense as much as polish. The Map lives in this tab's
+// isolated world, so it dies with the tab — a true session cache, no
+// storage permission or invalidation policy needed. 10 minutes is fresh
+// enough for discussion threads that change on the scale of days.
+
+const SEARCH_CACHE_TTL_MS = 10 * 60 * 1000;
+const searchCache = new Map(); // key → { threads, expiresAt }
+
+function searchCacheKey(professorName, school) {
+  return `${professorName}|${school}`.toLowerCase();
+}
+
 // ---------- public API ----------
 
 async function fetchRedditThreads(professorName, school) {
+  const cacheKey = searchCacheKey(professorName, school);
+  const cached = searchCache.get(cacheKey);
+  if (cached) {
+    if (cached.expiresAt > Date.now()) return cached.threads;
+    searchCache.delete(cacheKey); // lazy eviction: expired entries die on touch
+  }
+
   // Two searches, in parallel:
   //  1. CUNY subreddits only — "r/Baruch+CUNY+hunter" is a multireddit, so
   //     one request covers all of them. School context is implied by the
@@ -77,6 +99,14 @@ async function fetchRedditThreads(professorName, school) {
   }
   if (failures.length === 1) {
     console.warn(`Professor Companion: partial Reddit results — ${failures[0]}`);
+  } else {
+    // Cache only complete results: pinning a partial (one search failed)
+    // for 10 minutes would hide a recovery the very next navigation might
+    // have gotten. Total failure throws above and caches nothing.
+    searchCache.set(cacheKey, {
+      threads,
+      expiresAt: Date.now() + SEARCH_CACHE_TTL_MS,
+    });
   }
   return threads;
 }
