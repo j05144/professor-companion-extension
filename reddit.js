@@ -244,3 +244,82 @@ async function runRedditSelfTest() {
 if (REDDIT_TEST_MODE) {
   runRedditSelfTest();
 }
+
+// ---------- search-quality test harness ----------
+//
+// Flip QUALITY_TEST on, fill QUALITY_TEST_CASES (e.g. from
+// docs/test-roster.md), reload the extension, then open any RMP page — the
+// RMP homepage or a search page is best, since no sidebar fetch fires there
+// to interleave with the report. One consolidated console.log prints at the
+// end: right-click the message → "Copy string object" and paste it into a
+// chat for scoring. Flip the flag off when done.
+
+const QUALITY_TEST = false;
+
+// { name, school } pairs.
+const QUALITY_TEST_CASES = [
+  // { name: "Jane Doe", school: "Baruch College" },
+];
+
+const QUALITY_TEST_DELAY_MS = 2000; // politeness gap between searches
+const QUALITY_SNIPPET_CHARS = 100;
+
+// Local copy of the age math (content.js has one too, but the harness stays
+// self-contained rather than coupling reddit.js to content.js internals).
+function qualityAge(dateStr) {
+  const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  if (!Number.isFinite(days) || days < 1) return "today";
+  if (days < 30) return `${days}d`;
+  if (days < 365) return `${Math.floor(days / 30)}mo`;
+  return `${Math.floor(days / 365)}y`;
+}
+
+async function runQualityTest() {
+  const lines = [];
+  lines.push(`=== Reddit search quality report — ${new Date().toISOString()} ===`);
+  lines.push(
+    `${QUALITY_TEST_CASES.length} professor(s) · cache bypassed · ${QUALITY_TEST_DELAY_MS}ms between searches`
+  );
+
+  for (let i = 0; i < QUALITY_TEST_CASES.length; i++) {
+    const { name, school } = QUALITY_TEST_CASES[i];
+    // Sequential on purpose, with a gap: a burst of parallel searches is
+    // exactly the traffic shape that gets extensions 403'd.
+    if (i > 0) await new Promise((resolve) => setTimeout(resolve, QUALITY_TEST_DELAY_MS));
+
+    lines.push("");
+    lines.push(`[${i + 1}/${QUALITY_TEST_CASES.length}] ${name} — ${school}`);
+    try {
+      // Evict any cached entry first so every run measures live search
+      // quality, not a 10-minute-old snapshot.
+      searchCache.delete(searchCacheKey(name, school));
+      const threads = await fetchRedditThreads(name, school);
+      if (threads.length === 0) lines.push("  (no results)");
+      threads.forEach((thread, n) => {
+        lines.push(`  ${n + 1}. ${thread.title}`);
+        lines.push(
+          `     r/${thread.subreddit} · ${thread.upvotes} upvotes · ${qualityAge(thread.date)} old`
+        );
+        if (thread.snippet) {
+          const preview =
+            thread.snippet.length > QUALITY_SNIPPET_CHARS
+              ? `${thread.snippet.slice(0, QUALITY_SNIPPET_CHARS)}…`
+              : thread.snippet;
+          lines.push(`     "${preview}"`);
+        }
+      });
+    } catch (err) {
+      lines.push(`  ERROR: ${err.message}`);
+    }
+  }
+
+  lines.push("");
+  lines.push("=== end of report ===");
+  // One log call for the whole report: a single string copies cleanly,
+  // where dozens of separate log lines would not.
+  console.log(lines.join("\n"));
+}
+
+if (QUALITY_TEST) {
+  runQualityTest();
+}
