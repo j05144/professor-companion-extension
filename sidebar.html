@@ -62,8 +62,9 @@
       </div>
 
       <!-- LOADED state: content.js appends <a class="pc-post"> cards here -->
+      <input type="checkbox" id="pc-showmore-check" class="pc-showmore-check" aria-label="Show all Reddit posts">
       <div id="pc-posts"></div>                                 <!-- js hook: post cards -->
-
+      <label for="pc-showmore-check" class="pc-showmore"></label>
       <!--
         Card template for renderSidebar(posts) — copy this structure per post:
         <a class="pc-post" href="POST_URL" target="_blank" rel="noopener">
