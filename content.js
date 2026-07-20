@@ -151,6 +151,18 @@ function wireSidebarControls(shadow) {
     }, 250);
   });
 
+  // LinkedIn element: if Jinge ever swaps the anchor for a button there's
+  // no href to set, so open the stored URL on click — wired once here so
+  // repeated detections never stack listeners. Starts hidden either way:
+  // it only appears once a detection confirms who we'd be searching for.
+  const linkedIn = shadow.getElementById("pc-linkedin");
+  if (linkedIn && linkedIn.tagName !== "A") {
+    linkedIn.addEventListener("click", () => {
+      if (linkedInUrl) window.open(linkedInUrl, "_blank", "noopener,noreferrer");
+    });
+  }
+  hideLinkedInLink();
+
   wireDragging(shadow);
 
   // Clicking anywhere else in the sidebar closes the theme menu.
@@ -159,6 +171,55 @@ function wireSidebarControls(shadow) {
       themeMenu.classList.remove("pc-open");
     }
   });
+}
+
+// ---------- 2c. LinkedIn lookup ----------
+// v1 ships a search URL, not a scraped profile: a Google query scoped to
+// linkedin.com/in with the professor's quoted name plus school. (The Google
+// CSE one-click top-result version is deferred to v2.)
+
+// Current professor's search URL; null until a detection succeeds. The
+// button-variant click handler reads this instead of capturing arguments,
+// so one listener wired at mount always opens the CURRENT professor.
+let linkedInUrl = null;
+
+function buildLinkedInUrl(name, school) {
+  // Assemble the query as ONE plain string first, then encode ONCE —
+  // encoding pieces separately and concatenating would double-encode the
+  // quotes (%22 → %2522) and break the exact-phrase search.
+  const query = `site:linkedin.com/in "${name}" ${school}`;
+  return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+}
+
+function updateLinkedInLink(name, school) {
+  if (!sidebarRoot) return;
+  const el = sidebarRoot.querySelector("#pc-linkedin");
+  if (!el) return;
+  linkedInUrl = buildLinkedInUrl(name, school);
+  // The template currently ships an <a>, but the element is Jinge's to
+  // change — handle either tag. Anchor: a real href (middle-click, copy
+  // link, and target/rel all work natively). Button: the click handler
+  // wired in wireSidebarControls opens linkedInUrl.
+  if (el.tagName === "A") {
+    el.href = linkedInUrl;
+    el.target = "_blank";
+    el.rel = "noopener noreferrer";
+  }
+  // Reveal via inline style, mirroring how hideLinkedInLink hides it.
+  el.style.display = "";
+}
+
+// Hidden whenever there's no confirmed professor: before first detection,
+// during SPA-navigation resets, and when detection times out and gives up
+// (never re-shown for that page, since only a success calls update).
+// Inline display:none, not the hidden attribute: Jinge's
+// ".pc-linkedin { display: flex }" would override the UA's [hidden] rule,
+// but nothing outranks an inline style.
+function hideLinkedInLink() {
+  linkedInUrl = null;
+  if (!sidebarRoot) return;
+  const el = sidebarRoot.querySelector("#pc-linkedin");
+  if (el) el.style.display = "none";
 }
 
 // ---------- 2a. dragging ----------
@@ -354,6 +415,9 @@ function updateSidebarIdentity(name, school) {
   const initials = initialsFrom(name);
   sidebarRoot.querySelector("#pc-initials").textContent = initials;
   sidebarRoot.querySelector("#pc-tab-initials").textContent = initials;
+  // Identity-derived, so it rides identity updates: every successful
+  // detection (including the mount backfill) refreshes the LinkedIn URL.
+  updateLinkedInLink(name, school);
 }
 
 // Between professors (SPA navigation) the header would otherwise keep
@@ -364,6 +428,9 @@ function resetSidebarIdentity() {
   sidebarRoot.querySelector("#pc-school").textContent = "";
   sidebarRoot.querySelector("#pc-initials").textContent = "··";
   sidebarRoot.querySelector("#pc-tab-initials").textContent = "··";
+  // No confirmed professor during the transition — hide rather than leave
+  // a link that would search for the professor we just left.
+  hideLinkedInLink();
 }
 
 // OS theme flipped while we're in "auto": re-resolve.
