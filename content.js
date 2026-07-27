@@ -437,10 +437,22 @@ async function startRedditSearch(name, school, professorId) {
   }
 }
 
+// Jinge's show-more toggle is pure CSS: a hidden checkbox (#pc-showmore-check)
+// plus a label (.pc-showmore) whose visibility and exact "Show N more" text
+// are computed by :has() selectors in styles.css. JS must not duplicate any
+// of that — its one job is this reset: the checkbox keeps its checked state
+// across renders, so without it a new professor would inherit the previous
+// professor's expanded view instead of starting collapsed at 2 posts.
+function resetShowMore() {
+  const check = sidebarRoot.querySelector("#pc-showmore-check");
+  if (check) check.checked = false;
+}
+
 function showSearching() {
   if (!sidebarRoot) return;
   sidebarRoot.dataset.state = "loading";
   sidebarRoot.querySelector("#pc-posts").replaceChildren();
+  resetShowMore();
   sidebarRoot.querySelector("#pc-count-label").textContent = "Reddit mentions · searching…";
 }
 
