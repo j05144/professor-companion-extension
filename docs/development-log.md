@@ -6,7 +6,7 @@ This document tracks our progress, key decisions, challenges, and next steps thr
 
 ## Project Status
 
-**Current Phase:** Phase 4 | LinkedIn + Polish (Phase 3 PR open, awaiting review/merge)
+**Current Phase:** Phase 4 | Polish (show-more, LinkedIn, README merged; error state + icons blocked on Jinge; store account not started)
 
 **Current Direction:** Chrome extension MVP on RMP pages -> quality pass -> Chrome Web Store publish. Standalone site and AI summary deferred to v2.
 
@@ -79,6 +79,19 @@ Next Steps: Antony wires the injection (web_accessible_resources + fetch into Sh
 - Phase 4 begun: LinkedIn button wiring next.
 ### Next Steps
 - Merge Phase 3 -> LinkedIn button PR -> show-more toggle (after Jinge's CSS) -> error state -> README -> Web Store developer account.
+
+## 7/27/2026 | Antony
+### Completed
+- Show-more feature complete: Jinge's CSS-only toggle (hidden checkbox + :checked pattern, her discovery — no JS needed for the toggle itself) landed directly on main on 7/19; my 12-line collapsed-reset in content.js merged via PR #2, so a new professor always starts back at 2 posts.
+- LinkedIn lookup button merged (PR #3): Google site:linkedin.com/in search URL built as one string with a single encodeURIComponent pass; handles anchor or button markup; updates on SPA navigation; hidden whenever detection gives up.
+- README rewritten and merged (PR #4): architecture overview, Built By split, v2 roadmap with the AI-summary grounding constraint.
+- Error-state design decision: the error card + retry covers fetch failures only; when detection gives up, keep the existing empty card with the manual search link, since there is no confirmed professor to retry.
+### Challenges
+- Process lesson, recorded honestly: I self-merged all three PRs by accident. After the second "Create pull request" click I kept going and hit "Merge pull request" — same color, different job. New rule: my clicks stop at Create; any Merge button belongs to the reviewer. Jinge is reviewing the closed PRs after the fact.
+### Next Steps
+- Remaining Phase 4: error-state wiring (blocked on Jinge's error card markup), icons in manifest.json (blocked on her 16/48/128 PNGs), Web Store developer account (not started).
+- Jinge's queue: error card, icons, "Find on LinkedIn" relabel, after-the-fact review of README and the two content.js PRs.
+- Parked by choice: the quality loop (roster + ground truth + bake-off) gates Phase 5, not Phase 4.
 
 ---
 
