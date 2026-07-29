@@ -102,6 +102,7 @@ Next Steps: Antony adds the collapsed-reset on professor change. Error card mark
 Completed: Pulled and verified Antony's three merged PRs (#2 collapsed-reset, #3 LinkedIn button, #4 README) on live professor pages. Reviewing the self-merged PRs after the fact under the new rule that the Merge button belongs to the reviewer.
 Challenges: git pull kept aborting and I assumed the extension was broken. The real cause was an uncommitted README edit blocking the merge, so his code never reached my machine at all. Lesson: read the last line of Git's output first, that's where it says whether it actually worked. Stashed the edit and the pull went through.
 Next Steps: Error card markup, 16/48/128 icons, "Find on LinkedIn" relabel. Confirm with Antony whether the AI summary stays parked at v2.
+
 ---
 
 # Team Responsibilities
