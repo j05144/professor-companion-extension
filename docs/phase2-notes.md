@@ -5,8 +5,8 @@ idea as phase1-notes: not just what the code does, but why we did it that way.
 
 **Current state:** `sidebar.html` and `styles.css` contain the complete sidebar
 UI — loading, loaded, and empty states, collapse, and light/dark/auto themes.
-Wireframes are in `/mockups`. The sidebar is not injected into RMP pages yet;
-that wiring is the next step in content.js.
+Wireframes are in `/mockups`. The sidebar is live: content.js mounts it in a
+Shadow DOM root on RMP professor pages with real Reddit results.
 
 ---
 
@@ -116,3 +116,30 @@ extension) loads the real styles.css with buttons to force each state:
 5. Toggle collapsed → card hides, floating tab appears at the right edge,
    clicking it brings the card back.
 6. Reduced-motion on → no shimmer, no slide-in.
+
+---
+
+## Update (7/19): overflow fix + CSS-only show-more
+
+Once real Reddit data landed (PR #1), professors with 5 posts made the card
+taller than the screen — the LinkedIn button got cut off and nothing scrolled.
+Two changes:
+
+**Scrollable body.** The card now has `max-height: calc(100vh - 120px)` and
+the body scrolls (`overflow-y: auto`). `overscroll-behavior: contain` stops a
+scroll inside the card from also scrolling the RMP page behind it.
+
+**Show 2 posts first, expand on demand.** The list starts collapsed to 2 posts
+with a blue "Show N more ↓" link that expands to all posts and flips to
+"Show less ↑". Built with zero JavaScript: a visually hidden checkbox holds the
+open/closed state, the link is its `<label>`, and CSS reacts to `:checked`. The
+exact count comes from `:has()` — "if the 5th post is also the last post, 3 are
+hidden" — one rule per possible count up to the 10-post cap. The button only
+renders when a 3rd post exists.
+
+Why no JS: the sidebar already follows "state lives in markup, CSS decides what
+shows." A checkbox is exactly that pattern, it keeps content.js untouched
+(ownership rule), and it works before any script runs.
+
+Known tradeoff: the count labels assume #pc-posts contains only .pc-post cards
+and results stay capped at 10. If either changes, the labels need updating.
