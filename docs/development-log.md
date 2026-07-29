@@ -80,6 +80,11 @@ Next Steps: Antony wires the injection (web_accessible_resources + fetch into Sh
 ### Next Steps
 - Merge Phase 3 -> LinkedIn button PR -> show-more toggle (after Jinge's CSS) -> error state -> README -> Web Store developer account.
 
+## 7/19/2026 | Jinge
+Completed: Reviewed and merged Antony's Phase 3 PR (#1) — first time seeing the design running live on real RMP pages with real Reddit threads. QA on a 5-post professor found an overflow bug: the card grew taller than the window, cutting off the LinkedIn button with no way to scroll. Fixed it with max-height + internal scroll on the body, and built the show-2-then-expand pattern as a CSS-only toggle (hidden checkbox + :has for the exact hidden-post count), so no content.js changes were needed for the toggle itself.
+Challenges: First "Extension context invalidated" error. Reloading the extension orphans the content scripts in tabs that are already open, so the habit is now refresh the extension, then refresh the page.
+Next Steps: Antony adds the collapsed-reset on professor change. Error card markup and icons are mine.
+
 ## 7/27/2026 | Antony
 ### Completed
 - Show-more feature complete: Jinge's CSS-only toggle (hidden checkbox + :checked pattern, her discovery — no JS needed for the toggle itself) landed directly on main on 7/19; my 12-line collapsed-reset in content.js merged via PR #2, so a new professor always starts back at 2 posts.
@@ -93,6 +98,10 @@ Next Steps: Antony wires the injection (web_accessible_resources + fetch into Sh
 - Jinge's queue: error card, icons, "Find on LinkedIn" relabel, after-the-fact review of README and the two content.js PRs.
 - Parked by choice: the quality loop (roster + ground truth + bake-off) gates Phase 5, not Phase 4.
 
+## 7/27/2026 | Jinge
+Completed: Pulled and verified Antony's three merged PRs (#2 collapsed-reset, #3 LinkedIn button, #4 README) on live professor pages. Reviewing the self-merged PRs after the fact under the new rule that the Merge button belongs to the reviewer.
+Challenges: git pull kept aborting and I assumed the extension was broken. The real cause was an uncommitted README edit blocking the merge, so his code never reached my machine at all. Lesson: read the last line of Git's output first, that's where it says whether it actually worked. Stashed the edit and the pull went through.
+Next Steps: Error card markup, 16/48/128 icons, "Find on LinkedIn" relabel. Confirm with Antony whether the AI summary stays parked at v2.
 ---
 
 # Team Responsibilities
