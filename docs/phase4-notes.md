@@ -48,3 +48,32 @@ the fact.
   manifest icons (blocked on her 16/48/128 PNGs), Web Store developer account.
 - Parked by choice: the quality loop (roster + ground truth + bake-off) gates
   Phase 5, not Phase 4.
+
+---
+
+## Frontend polish (Jinge)
+
+### Error card vs. empty card
+
+Two failures that look similar mean opposite things. "No discussions found yet"
+is a real answer — retrying won't change it, so that card offers a Reddit
+search link instead. "Couldn't load discussions" means Reddit didn't respond,
+which usually clears up, so that card gets a retry button. One shared card
+would either make people retry forever on a professor nobody discusses, or
+give up on one who has threads.
+
+Per Antony's call, the error card covers fetch failures only. When detection
+gives up there is no confirmed professor to retry, so that keeps the empty card.
+
+The CSS slots into the existing state machine without touching a single
+existing rule: `#pc-root:not([data-state="error"]) .pc-error { display: none; }`
+plus one block hiding the posts, count label, and show-more in error state. The
+LinkedIn button deliberately survives — it never depended on Reddit.
+
+### Icons
+
+The three sizes are drawn separately, not downscaled from one master. The
+tassel and cap body read fine at 128px and turn to gray mush at 16px, which is
+the size that actually sits in the toolbar all day, so the 16px version is just
+the mortarboard, larger in frame. Drawn in the sidebar's accent blue (#28508F)
+so the toolbar icon and the card match.

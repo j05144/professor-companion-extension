@@ -103,6 +103,11 @@ Completed: Pulled and verified Antony's three merged PRs (#2 collapsed-reset, #3
 Challenges: git pull kept aborting and I assumed the extension was broken. The real cause was an uncommitted README edit blocking the merge, so his code never reached my machine at all. Lesson: read the last line of Git's output first, that's where it says whether it actually worked. Stashed the edit and the pull went through.
 Next Steps: Error card markup, 16/48/128 icons, "Find on LinkedIn" relabel. Confirm with Antony whether the AI summary stays parked at v2.
 
+## 7/28/2026 | Jinge
+Completed: Docs catch-up (7/19 and 7/27 entries, plus the phase2-notes section on the overflow fix and CSS-only show-more). Built the error card to Antony's spec — fetch failures only with a retry button, while detection failures keep the empty card — and added an Error button to test-preview.html so all four states are checkable locally. Made the 16/48/128 icons, drawn separately per size rather than downscaled. Relabeled the LinkedIn button to "Find on LinkedIn". Added README screenshots: hero, light/dark/collapsed, and the three states. Both of Antony's blockers are cleared.
+Challenges: A "---" placed directly under text silently turns that text into a heading in markdown, which is why my 7/27 entry rendered oversized. Also dropped a closing </div> while pasting the error card and nested it inside the empty card; caught it by comparing indentation between the two blocks.
+Next Steps: After-the-fact review of PRs #2-#4. Ask Antony about the three parked design-review items (flatten cards to rows, tool identity in header, demote LinkedIn button) and whether the AI summary stays at v2.
+
 ---
 
 # Team Responsibilities
