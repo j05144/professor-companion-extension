@@ -6,11 +6,10 @@
   How it's used: content.js fetches this file (web_accessible_resources),
   parses it, and appends it inside a Shadow DOM root on the RMP page.
   States are controlled by ONE attribute on the root:
-    <aside id="pc-root" data-state="loading | loaded | empty">
+<aside id="pc-root" data-state="loading | loaded | empty | error">
   Collapse is a class: #pc-root.pc-collapsed shows only the floating tab.
   Theme is an attribute: data-theme="light | dark" (auto = content.js picks).
 -->
-
 <aside id="pc-root" data-state="loading" data-theme="light">
 
   <!-- ===== Floating tab (visible only when collapsed) ===== -->
@@ -79,6 +78,13 @@
         <div class="pc-empty-big">No discussions found yet</div>
         <div class="pc-empty-sub">Nothing in r/Baruch or r/CUNY mentions this professor so far.</div>
         <a id="pc-empty-search" href="#" target="_blank" rel="noopener">Search Reddit ↗</a> <!-- js hook: scoped search URL -->
+      </div>
+
+      <!-- ERROR state (shown when data-state="error") — fetch failures only -->
+      <div class="pc-error">
+        <div class="pc-error-big">Couldn't load discussions</div>
+        <div class="pc-error-sub">Reddit didn't respond. This usually clears up in a moment.</div>
+        <button class="pc-retry" id="pc-retry" type="button">Try again</button> <!-- js hook: re-run the Reddit fetch -->
       </div>
 
       <div class="pc-divider"></div>
