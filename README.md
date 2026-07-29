@@ -46,9 +46,7 @@ After editing code, click the extension's **reload** (↻) button on `chrome://e
 
 ## Screenshots
 
-<!-- TODO: add screenshots (light + dark, expanded + collapsed tab) -->
-
-*Coming soon.*![Professor Companion on a Rate My Professors page](assets/screenshot-hero.png)
+[Professor Companion on a Rate My Professors page](assets/screenshot-hero.png)
 
 | Light | Dark | Collapsed |
 |---|---|---|
