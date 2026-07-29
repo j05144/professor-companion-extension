@@ -48,7 +48,20 @@ After editing code, click the extension's **reload** (↻) button on `chrome://e
 
 <!-- TODO: add screenshots (light + dark, expanded + collapsed tab) -->
 
-*Coming soon.*
+*Coming soon.*![Professor Companion on a Rate My Professors page](assets/screenshot-hero.png)
+
+| Light | Dark | Collapsed |
+|---|---|---|
+| ![Light mode](assets/screenshot-light.png) | ![Dark mode](assets/screenshot-dark.png) | ![Collapsed tab](assets/screenshot-collapsed.png) |
+
+### Designed for every state
+
+Reddit is slow sometimes, and some professors have no threads at all. Both cases
+get a real screen instead of a blank card.
+
+| Loading | No discussions | Reddit unavailable |
+|---|---|---|
+| ![Loading](assets/state-loading.png) | ![Empty state](assets/state-empty.png) | ![Error state](assets/state-error.png) |
 
 ## Demo
 
