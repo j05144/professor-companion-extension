@@ -12,10 +12,27 @@
 // subreddits, query building, response parsing, ranking); background.js owns
 // transport only (validate URL → fetch → return JSON).
 
-// Subreddits searched first — results from these outrank sitewide matches.
-// Extend freely (e.g. "ccny", "QueensCollege"); a name with no matches just
-// contributes zero results.
-const CUNY_SUBREDDITS = ["Baruch", "CUNY", "hunter"];
+// School → its own subreddit. Searching a Baruch professor in r/QueensCollege
+// only adds noise, so the campus query is scoped to the school RMP reports.
+// Keys are RMP's school strings, normalized (lowercased/trimmed) so casing
+// and spacing differences still match. Extend as we verify more campus subs.
+const SCHOOL_SUBREDDITS = new Map([
+  ["baruch college", ["Baruch"]],
+  ["hunter college", ["HunterCollege"]],
+  ["queens college", ["QueensCollege"]],
+]);
+
+// Added alongside any mapped school: the system-wide subreddit, where
+// cross-campus threads about CUNY professors live.
+const CUNY_WIDE_SUBREDDIT = "CUNY";
+
+// Returns the subreddits to search for this school, or null when we have no
+// mapping — in which case the caller skips the subreddit query entirely
+// rather than guessing at campus subs that may not exist.
+function subredditsForSchool(school) {
+  const own = SCHOOL_SUBREDDITS.get((school ?? "").trim().toLowerCase());
+  return own ? [...own, CUNY_WIDE_SUBREDDIT] : null;
+}
 
 const RESULTS_PER_SEARCH = 15; // per request; Reddit caps limit at 100
 const SNIPPET_MAX_CHARS = 200;
@@ -58,30 +75,36 @@ async function fetchRedditThreads(professorName, school) {
     searchCache.delete(cacheKey); // lazy eviction: expired entries die on touch
   }
 
-  // Two searches, in parallel:
-  //  1. CUNY subreddits only — "r/Baruch+CUNY+hunter" is a multireddit, so
-  //     one request covers all of them. School context is implied by the
-  //     subreddit, so the query is just the professor's name, quoted for an
-  //     exact-phrase match.
+  // Up to two searches, in parallel:
+  //  1. The school's own subreddit + r/CUNY — "r/Baruch+CUNY" is a
+  //     multireddit, so one request covers both. School context is implied
+  //     by the subreddit, so the query is just the professor's name, quoted
+  //     for an exact-phrase match. Skipped entirely for unmapped schools.
   //  2. All of Reddit — here the school name IS in the query, to
-  //     disambiguate professors with common names.
-  const cunyUrl = buildSearchUrl(`"${professorName}"`, CUNY_SUBREDDITS);
-  const sitewideUrl = buildSearchUrl(`"${professorName}" ${school}`);
+  //     disambiguate professors with common names. Always runs, so an
+  //     unmapped school still gets results.
+  const subreddits = subredditsForSchool(school);
+
+  // Labels ride with the URLs so a failure can name which search died.
+  const searches = [];
+  if (subreddits) {
+    searches.push(["school subreddits", buildSearchUrl(`"${professorName}"`, subreddits)]);
+  }
+  searches.push(["sitewide", buildSearchUrl(`"${professorName}" ${school}`)]);
 
   // allSettled (not all): one search failing shouldn't throw away the other.
-  const [cuny, sitewide] = await Promise.allSettled([
-    requestJson(cunyUrl),
-    requestJson(sitewideUrl),
-  ]);
+  const results = await Promise.allSettled(searches.map(([, url]) => requestJson(url)));
 
   const threads = [];
   const failures = [];
   const seen = new Set();
 
-  // Order matters: CUNY results are pushed first, which both puts them at
-  // the top of the returned array and wins the dedupe when the same post
-  // shows up in both searches.
-  for (const [label, result] of [["CUNY subreddits", cuny], ["sitewide", sitewide]]) {
+  // Order matters: the subreddit search is first in `searches`, which both
+  // puts its results at the top of the returned array and wins the dedupe
+  // when the same post shows up in both searches.
+  for (let i = 0; i < results.length; i++) {
+    const [label] = searches[i];
+    const result = results[i];
     if (result.status === "rejected") {
       failures.push(`${label}: ${result.reason.message}`);
       continue;
@@ -94,11 +117,11 @@ async function fetchRedditThreads(professorName, school) {
     }
   }
 
-  if (failures.length === 2) {
+  if (failures.length === searches.length) {
     throw new Error(`All Reddit searches failed — ${failures.join("; ")}`);
   }
-  if (failures.length === 1) {
-    console.warn(`Professor Companion: partial Reddit results — ${failures[0]}`);
+  if (failures.length > 0) {
+    console.warn(`Professor Companion: partial Reddit results — ${failures.join("; ")}`);
   } else {
     // Cache only complete results: pinning a partial (one search failed)
     // for 10 minutes would hide a recovery the very next navigation might
