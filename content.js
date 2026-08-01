@@ -471,7 +471,7 @@ const MAX_POSTS = 10; // #pc-posts is getting a scrollable body (Jinge), so more
 // instead of rendering under the wrong name.
 let redditRequestId = 0;
 
-async function startRedditSearch(name, school, professorId) {
+async function startRedditSearch(name, school, professorId, schoolId) {
   const requestId = ++redditRequestId;
   // Render only while BOTH hold: we are the newest search (the ticket orders
   // our own requests) and the URL still shows the professor this search was
@@ -487,7 +487,7 @@ async function startRedditSearch(name, school, professorId) {
     if (!stillCurrent()) return;
     showSearching();
 
-    const threads = await fetchRedditThreads(name, school);
+    const threads = await fetchRedditThreads(name, school, schoolId);
     if (!stillCurrent()) return;
 
     if (threads.length > 0) {
@@ -634,6 +634,17 @@ function getSchoolFromDom() {
   return school || null;
 }
 
+// RMP's numeric school ID, read from the same link's href ("/school/231").
+// The ID is the dependable key for subreddit mapping: display names vary
+// ("CUNY Queens College" vs "Queens College") and some campuses have several
+// school records, but the ID in the URL is exact. Null when the link is
+// absent — the title fallback below has no ID to offer.
+function getSchoolIdFromDom() {
+  const link = document.querySelector('[class*="NameTitle__Title"] a[href^="/school"]');
+  const match = link?.getAttribute("href").match(/^\/school\/(\d+)/);
+  return match ? match[1] : null;
+}
+
 function getFromPageTitle() {
   // Fallback if RMP renames its CSS classes: the tab title is
   // "First Last at School Name | Rate My Professors".
@@ -696,9 +707,13 @@ function attemptDetection() {
   // and a school read alongside a stale name is equally stale.
   let name = getNameFromDom();
   let school = getSchoolFromDom();
+  // The ID comes from the same link as the school name, so it passes or
+  // fails the staleness gate with it — never carry the previous page's ID.
+  let schoolId = getSchoolIdFromDom();
   if (!navSnapshot.initial && name !== null && name === navSnapshot.name) {
     name = null;
     school = null;
+    schoolId = null;
   }
 
   // Title fallback, hardened: getFromPageTitle already requires the
@@ -716,9 +731,11 @@ function attemptDetection() {
   if (!name || !school) return; // not confirmable yet; the observer retries
 
   console.log(`Detected: ${name}, ${school}`);
-  lastLogged = { path: watchedPath, professorId, name, school };
+  lastLogged = { path: watchedPath, professorId, name, school, schoolId };
   updateSidebarIdentity(name, school);
-  startRedditSearch(name, school, professorId);
+  // schoolId may be null (title-fallback path); reddit.js then falls back to
+  // its name-based lookup rather than skipping the campus search.
+  startRedditSearch(name, school, professorId, schoolId);
   cancelDetectionPass();
 }
 
