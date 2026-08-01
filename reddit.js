@@ -1,6 +1,7 @@
 // Professor Companion — Reddit thread search (Phase 3, no UI yet).
 //
-// fetchRedditThreads(professorName, school) is the public entry point. It
+// fetchRedditThreads(professorName, school, schoolId) is the public entry
+// point (schoolId is RMP's numeric school ID, optional). It
 // runs here in the content script, but the actual network request happens in
 // background.js: a content script inherits ratemyprofessors.com's origin for
 // network purposes, so the browser's same-origin policy blocks it from
@@ -14,8 +15,22 @@
 
 // School → its own subreddit. Searching a Baruch professor in r/QueensCollege
 // only adds noise, so the campus query is scoped to the school RMP reports.
-// Keys are RMP's school strings, normalized (lowercased/trimmed) so casing
-// and spacing differences still match. Extend as we verify more campus subs.
+//
+// Keyed by RMP's school ID (the number in the /school/<id> link content.js
+// already reads), because display names are not dependable: RMP spells
+// Queens as "CUNY Queens College", and Hunter exists as THREE separate
+// school records with three different spellings and three different IDs.
+// IDs below were each verified against their live RMP school page.
+const SCHOOL_ID_SUBREDDITS = new Map([
+  ["222", ["Baruch"]],          // Baruch College
+  ["226", ["HunterCollege"]],   // Hunter College
+  ["18469", ["HunterCollege"]], // CUNY Hunter College  (duplicate record)
+  ["19393", ["HunterCollege"]], // hunter college       (duplicate record)
+  ["231", ["QueensCollege"]],   // CUNY Queens College
+]);
+
+// Fallback for when no school ID is available — i.e. the title-fallback
+// detection path, which yields a name but no link to read an ID from.
 const SCHOOL_SUBREDDITS = new Map([
   ["baruch college", ["Baruch"]],
   ["hunter college", ["HunterCollege"]],
@@ -26,11 +41,20 @@ const SCHOOL_SUBREDDITS = new Map([
 // cross-campus threads about CUNY professors live.
 const CUNY_WIDE_SUBREDDIT = "CUNY";
 
+// Lowercase, collapse spacing, and drop a leading "CUNY " so the name keys
+// above still match RMP's prefixed spellings ("CUNY Queens College").
+function normalizeSchoolName(school) {
+  return (school ?? "").trim().toLowerCase().replace(/^cuny\s+/, "");
+}
+
 // Returns the subreddits to search for this school, or null when we have no
 // mapping — in which case the caller skips the subreddit query entirely
-// rather than guessing at campus subs that may not exist.
-function subredditsForSchool(school) {
-  const own = SCHOOL_SUBREDDITS.get((school ?? "").trim().toLowerCase());
+// rather than guessing at campus subs that may not exist. ID wins when we
+// have one; the name lookup is the fallback, never the primary key.
+function subredditsForSchool(school, schoolId) {
+  const own =
+    (schoolId ? SCHOOL_ID_SUBREDDITS.get(String(schoolId)) : null) ??
+    SCHOOL_SUBREDDITS.get(normalizeSchoolName(school));
   return own ? [...own, CUNY_WIDE_SUBREDDIT] : null;
 }
 
@@ -67,7 +91,7 @@ function searchCacheKey(professorName, school) {
 
 // ---------- public API ----------
 
-async function fetchRedditThreads(professorName, school) {
+async function fetchRedditThreads(professorName, school, schoolId) {
   const cacheKey = searchCacheKey(professorName, school);
   const cached = searchCache.get(cacheKey);
   if (cached) {
@@ -82,15 +106,18 @@ async function fetchRedditThreads(professorName, school) {
   //     for an exact-phrase match. Skipped entirely for unmapped schools.
   //  2. All of Reddit — here the school name IS in the query, to
   //     disambiguate professors with common names. Always runs, so an
-  //     unmapped school still gets results.
-  const subreddits = subredditsForSchool(school);
+  //     unmapped school still gets results. The school is quoted as one
+  //     phrase: unquoted, "CUNY Queens College" is three loose terms that
+  //     Reddit's relevance sort will happily satisfy on their own, which is
+  //     how a Queens professor ended up showing generic campus threads.
+  const subreddits = subredditsForSchool(school, schoolId);
 
   // Labels ride with the URLs so a failure can name which search died.
   const searches = [];
   if (subreddits) {
     searches.push(["school subreddits", buildSearchUrl(`"${professorName}"`, subreddits)]);
   }
-  searches.push(["sitewide", buildSearchUrl(`"${professorName}" ${school}`)]);
+  searches.push(["sitewide", buildSearchUrl(`"${professorName}" "${school}"`)]);
 
   // allSettled (not all): one search failing shouldn't throw away the other.
   const results = await Promise.allSettled(searches.map(([, url]) => requestJson(url)));
