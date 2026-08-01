@@ -2,12 +2,12 @@
 
 A Chrome extension (Manifest V3) that enriches Rate My Professors professor pages with what students actually say — real Reddit discussions, surfaced in a sidebar right on the professor's page, plus a one-click LinkedIn lookup.
 
-**Who it's for:** students choosing classes who want more than a star rating. Built by two CUNY students, so CUNY subreddits (r/Baruch, r/CUNY, r/hunter) are searched first — but it works on any RMP professor page. No accounts, no tracking; it only reads public Reddit data.
+**Who it's for:** students choosing classes who want more than a star rating. Built by two CUNY students, so the professor's own campus subreddit is searched first — r/Baruch, r/HunterCollege, or r/QueensCollege, always alongside r/CUNY — but it works on any RMP professor page. No accounts, no tracking; it only reads public Reddit data.
 
 ## Features
 
 - **Automatic professor detection** on RMP professor pages — SPA-aware, so it keeps up with client-side navigation. Detection is keyed to the professor ID in the URL, and results can never render under the wrong professor.
-- **Real Reddit threads:** CUNY subreddits searched first (one multireddit request), then sitewide; results deduped and CUNY-ranked, up to 10 cards, collapsed to 2 with a show-more toggle.
+- **Real Reddit threads:** the campus subreddit is picked from RMP's own school ID (the number in the `/school/<id>` link), not the school's display name — RMP spells the same campus several ways and keeps duplicate records for some. That campus sub plus r/CUNY is searched in one multireddit request, then all of Reddit; results are deduped with campus threads ranked first, up to 10 cards, collapsed to 2 with a show-more toggle. Schools we have no mapping for still get the sitewide search.
 - **Clean previews:** markdown stripped, bare URLs removed, snippets truncated at word boundaries — and every piece of Reddit text is rendered via `textContent`, never `innerHTML`, so untrusted input can't inject markup.
 - **LinkedIn lookup:** one click opens a Google search scoped to `linkedin.com/in` for the detected professor and school.
 - **A sidebar that stays out of your way:** light/dark/auto theme, collapsible to a floating tab, draggable (card by its header, tab along the right edge), with positions and preferences remembered.
@@ -20,7 +20,7 @@ RMP professor page
 └─ content.js ──── detects professor from /professor/<id> in the URL;
    │               distrusts DOM/title after SPA navigation until they change
    │               (staleness gates), mounts the sidebar, renders results
-   ├─ reddit.js ── builds CUNY + sitewide search queries, parses Reddit's
+   ├─ reddit.js ── builds campus + sitewide search queries, parses Reddit's
    │               Listing JSON, ranks/dedupes, caches per tab, sanitizes snippets
    │        │ message
    │        ▼

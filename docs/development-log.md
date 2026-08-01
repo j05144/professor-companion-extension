@@ -103,6 +103,22 @@ Completed: Pulled and verified Antony's three merged PRs (#2 collapsed-reset, #3
 Challenges: git pull kept aborting and I assumed the extension was broken. The real cause was an uncommitted README edit blocking the merge, so his code never reached my machine at all. Lesson: read the last line of Git's output first, that's where it says whether it actually worked. Stashed the edit and the pull went through.
 Next Steps: Error card markup, 16/48/128 icons, "Find on LinkedIn" relabel. Confirm with Antony whether the AI summary stays parked at v2.
 
+## 8/1/2026 | Antony
+### Completed
+- Ran the search quality loop end to end. Useful results (score 2) for professors with real Reddit presence: baseline 5 of 9, Round 1 7 of 9, Round 2 8 of 9.
+- Round 1 (school-ID mapping + quoted sitewide query, PRs #5/#6): campus subreddit is now chosen by RMP's numeric school ID from the /school/{id} href, and the sitewide query quotes the school as one phrase.
+- Round 2 (last-name fallback): when the exact-phrase query finds nothing in the campus subreddit, retry that same subreddit with the bare last name, unquoted. Campus-only — a bare surname sitewide pulls strangers from every campus.
+- Three root causes found, all in query construction rather than parsing or ranking:
+  1. Wrong subreddit name: the hardcoded list searched r/hunter instead of r/HunterCollege, so every search carried noise from an unrelated subreddit.
+  2. School-name keys never matched RMP's real strings. RMP prefixes some campuses (CUNY Queens College) and keeps duplicate school records for others (Hunter exists three times, three IDs, three spellings). Fixed by keying on the /school/{id} href instead of the display name — the ID is exact and stable where the name is neither.
+  3. Exact-phrase queries missed threads where students write "professor Lastname" rather than the full name RMP lists, which is most of how professors actually get mentioned.
+### Methodology
+- 10-professor stratified roster (9 with real Reddit presence, 1 without as a control), hand-written ground truth recorded BEFORE any scoring so the target could not drift to match the output.
+- One change per round, re-scored against the same 0-to-2 rubric throughout (0 junk / 1 weak match / 2 genuinely useful), so every delta is attributable to a single change.
+### Next Steps
+- Merge the Round 2 fallback branch, then re-verify the roster on main.
+- Quality bar (useful threads for 3 of 5 with-presence professors) is cleared, so the demo GIF and Web Store publish are unblocked.
+
 ## 7/28/2026 | Jinge
 Completed: Built the error card to Antony's spec — fetch failures only with a retry button, detection failures keep the empty card — and added an Error button to test-preview.html so all four states are checkable locally. Made the 16/48/128 icons, drawn separately per size rather than downscaled. Relabeled the LinkedIn button to "Find on LinkedIn". Added README screenshots: hero plus light/dark/collapsed, and the three states (loading, empty, error) captured from the preview page. Reviewed and commented on the self-merged PRs #2-#4. Docs catch-up: my 7/19 and 7/27 log entries and the phase2-notes show-more section. Both of Antony's blockers are cleared.
 Challenges: A "---" directly under text silently turns it into a heading in markdown. Also dropped a closing </div> while pasting the error card and nested it inside the empty card; caught it by comparing indentation. And left a "Coming soon" placeholder glued to the hero image in the README before spotting it.
