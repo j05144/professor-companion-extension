@@ -103,7 +103,8 @@ async function fetchRedditThreads(professorName, school, schoolId) {
   //  1. The school's own subreddit + r/CUNY — "r/Baruch+CUNY" is a
   //     multireddit, so one request covers both. School context is implied
   //     by the subreddit, so the query is just the professor's name, quoted
-  //     for an exact-phrase match. Skipped entirely for unmapped schools.
+  //     for an exact-phrase match, with a last-name retry when that finds
+  //     nothing. Skipped entirely for unmapped schools.
   //  2. All of Reddit — here the school name IS in the query, to
   //     disambiguate professors with common names. Always runs, so an
   //     unmapped school still gets results. The school is quoted as one
@@ -112,15 +113,21 @@ async function fetchRedditThreads(professorName, school, schoolId) {
   //     how a Queens professor ended up showing generic campus threads.
   const subreddits = subredditsForSchool(school, schoolId);
 
-  // Labels ride with the URLs so a failure can name which search died.
+  // Each entry is [label, promise-of-threads] rather than [label, url]: the
+  // campus search is now two potential requests, so it owns its own parsing
+  // and still starts immediately, in parallel with sitewide. Labels ride
+  // along so a failure can name which search died.
   const searches = [];
   if (subreddits) {
-    searches.push(["school subreddits", buildSearchUrl(`"${professorName}"`, subreddits)]);
+    searches.push(["school subreddits", searchCampus(professorName, subreddits)]);
   }
-  searches.push(["sitewide", buildSearchUrl(`"${professorName}" "${school}"`)]);
+  searches.push([
+    "sitewide",
+    requestJson(buildSearchUrl(`"${professorName}" "${school}"`)).then(parseSearchResults),
+  ]);
 
   // allSettled (not all): one search failing shouldn't throw away the other.
-  const results = await Promise.allSettled(searches.map(([, url]) => requestJson(url)));
+  const results = await Promise.allSettled(searches.map(([, promise]) => promise));
 
   const threads = [];
   const failures = [];
@@ -136,7 +143,7 @@ async function fetchRedditThreads(professorName, school, schoolId) {
       failures.push(`${label}: ${result.reason.message}`);
       continue;
     }
-    for (const thread of parseSearchResults(result.value)) {
+    for (const thread of result.value) {
       if (!seen.has(thread.url)) {
         seen.add(thread.url);
         threads.push(thread);
@@ -159,6 +166,44 @@ async function fetchRedditThreads(professorName, school, schoolId) {
     });
   }
   return threads;
+}
+
+// ---------- campus search (with last-name fallback) ----------
+
+// Suffixes to walk back past when taking a last name, so "John Smith Jr."
+// falls back on "Smith" rather than searching the campus sub for "Jr".
+const NAME_SUFFIXES = new Set(["jr", "jr.", "sr", "sr.", "ii", "iii", "iv", "phd", "ph.d.", "md"]);
+
+function lastNameOf(professorName) {
+  const parts = (professorName ?? "").trim().split(/\s+/).filter(Boolean);
+  while (parts.length > 1 && NAME_SUFFIXES.has(parts[parts.length - 1].toLowerCase())) {
+    parts.pop();
+  }
+  // A single-token name has no distinct last name to retry with.
+  return parts.length > 1 ? parts[parts.length - 1] : null;
+}
+
+// Exact phrase first; if the campus sub has nothing under the full name,
+// retry it with the bare last name. Students rarely write a professor's full
+// name ("had Svitak last fall", "Prof. Svitak"), and RMP's first name often
+// isn't the one they use (Joseph vs Joe) — both cases return zero for the
+// quoted query while real threads sit in the sub.
+//
+// Deliberately campus-only, per the design: a bare surname is a weak query.
+// Sitewide it would drag in strangers from every campus, but inside
+// r/QueensCollege+CUNY a surname is usually about that campus's professor.
+// It also only ever fires when the strict query already returned nothing, so
+// it can add results but never displace better ones.
+async function searchCampus(professorName, subreddits) {
+  const exact = parseSearchResults(
+    await requestJson(buildSearchUrl(`"${professorName}"`, subreddits))
+  );
+  if (exact.length > 0) return exact;
+
+  const lastName = lastNameOf(professorName);
+  if (!lastName) return exact; // nothing usefully different left to try
+
+  return parseSearchResults(await requestJson(buildSearchUrl(lastName, subreddits)));
 }
 
 // ---------- request plumbing ----------
