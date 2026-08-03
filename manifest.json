@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Professor Companion",
+  "name": "RMP Lookup",
   "version": "1.6.0",
   "description": "Enhances professor pages with publicly available academic information.",
   "permissions": ["activeTab", "storage"],
