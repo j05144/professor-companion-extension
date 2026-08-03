@@ -127,6 +127,11 @@ Next Steps: Ask Antony about the three parked design-review items (flatten cards
 - Quality gate cleared, so Phase 5 is open: Jinge's restyle, a 15-to-20-professor hardening pass, screenshots and demo GIF.
 - Phase 4 leftovers are now mine and no longer blocked — Jinge landed the error card and the icon PNGs on 7/28. Remaining: wire the error state to her card, add the icons key to manifest.json, open the Web Store developer account.
 
+## 8/2/2026 | Jinge
+Completed: Phase 5 restyle done. Flattened post cards to rows (kept the quote, dropped the box), demoted the LinkedIn button to a blue outline in LinkedIn's #0A66C2, removed the star since favorites are v2, and put the RMP Lookup logo in the header and the collapsed tab. Optimized the logo from 1.5 MB to 15 KB with a transparent background so it doesn't show a white box in dark mode.
+Challenges: The restyle broke the live extension — no Reddit results, dead LinkedIn button — while the local preview looked fine. I'd replaced #pc-initials with a logo <img>, and content.js still wrote .textContent to it, so updateSidebarIdentity threw a null TypeError before it reached updateLinkedInLink and startRedditSearch. One dead line killed two unrelated features. Fixed in content.js and manifest.json (Antony's files, flagged to him directly).
+Next Steps: Lock the design with Antony, then reshoot README screenshots. His side before publish: manifest still says "Professor Companion 1.5.0" with the placeholder icon and old description, plus the hardening pass. We also need a backup name since "RMP" is Rate My Professors' trademark.
+
 ---
 
 # Team Responsibilities

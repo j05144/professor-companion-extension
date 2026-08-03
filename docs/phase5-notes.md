@@ -68,3 +68,28 @@ delivering the answers to the wrong questions.
 - Phase 5 remaining: Jinge's restyle (flatten cards to rows, tool identity in
   the header, demote the LinkedIn button), a 15-to-20-professor hardening pass
   on the same rubric, then screenshots and the demo GIF.
+
+---
+
+## Frontend restyle (Jinge)
+
+**Flatten cards to rows.** Ten bordered cards read as ten competing boxes. Removing the box and using a hairline divider drops the visual weight without losing the quote preview — the quote is the product, since it's what students actually said.
+
+**Demote the LinkedIn button.** A full-width green fill made the one secondary action the loudest thing in the sidebar. Now an outlined button in LinkedIn's blue (#0A66C2): still obviously clickable, no longer competing with the results.
+
+**Tool identity.** The header showed only the professor, so nothing said what the sidebar was. The logo now sits where the initials circle was, and in the collapsed tab. The initials were redundant with the name right beside them.
+
+**Logo asset.** Source PNG was 1.5 MB for something rendered at 44px, and had a white background that showed as a box on the dark theme. Cropped, squared, and resized to 15 KB, with light low-saturation pixels faded out by alpha so no gray halo remains at the edges.
+
+### The bug this caused
+
+Renaming `#pc-initials` broke the live extension while the preview looked perfect. content.js still ran `querySelector("#pc-initials").textContent = initials`, which returned null and threw — before the next two lines called `updateLinkedInLink` and `startRedditSearch`. One dead line took out two unrelated features, and every retry hit the same throw.
+
+Two lessons: **a markup change is an API change** — sidebar.html's ids are a contract with content.js, so renaming one needs the same heads-up as renaming a function someone else calls. And **the preview can't catch integration breaks** — test-preview.html has no content.js, so it structurally cannot detect a broken selector. Right tool for design QA, wrong one for "did I break anything."
+
+Fix: dropped the dead initials writes, deleted the unused `initialsFrom`, and set the logo src once in `wireSidebarControls` via `chrome.runtime.getURL` (required inside the Shadow DOM, which is also why `assets/logo.png` needed adding to `web_accessible_resources`).
+
+### Before publish
+- Design sign-off, then reshoot README screenshots (current ones are pre-restyle)
+- manifest.json: name, icon, and description all still say Professor Companion
+- Backup name needed — "RMP" is a trademark and the store rejects over it
