@@ -50,6 +50,19 @@ let sidebarHost = null;  // page-DOM <div> that owns the shadow root
 let sidebarRoot = null;  // #pc-root <aside> inside the shadow root
 let mountPromise = null; // guards against two concurrent mounts
 
+// Every lookup into the sidebar template goes through this. The Phase 5
+// restyle taught the lesson the expensive way: an <img> replaced a <div>
+// whose id content.js still wrote to, querySelector returned null,
+// .textContent threw — and because the throw happened mid-function, it also
+// killed the LinkedIn wiring and the entire Reddit search on the lines
+// below. A renamed hook should cost us that one element and a console
+// warning, never the features downstream of it.
+function hook(root, id) {
+  const node = root?.querySelector(`#${id}`) ?? null;
+  if (!node) console.warn(`Professor Companion: sidebar template has no #${id}`);
+  return node;
+}
+
 const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
 
 // Mirrors styles.css's bottom-sheet breakpoint. Below it the sidebar is a
@@ -116,18 +129,25 @@ async function mountSidebar() {
   return mountPromise;
 }
 
+// Note on ordering: this runs inside mountSidebar BEFORE the host is
+// appended to the page, so anything that throws here means no sidebar at
+// all — which is why every lookup below is guarded rather than assumed.
 function wireSidebarControls(shadow) {
+  // The <img> src must be an extension URL: inside the Shadow DOM a relative
+  // path would resolve against ratemyprofessors.com and 404.
   const logoUrl = chrome.runtime.getURL("assets/logo.png");
-  shadow.getElementById("pc-logo-main").src = logoUrl;
-  shadow.getElementById("pc-tab-logo").src = logoUrl;
+  for (const id of ["pc-logo-main", "pc-tab-logo"]) {
+    const img = hook(shadow, id);
+    if (img) img.src = logoUrl;
+  }
 
-  const themeMenu = shadow.getElementById("pc-theme-menu");
+  const themeMenu = hook(shadow, "pc-theme-menu");
 
-  shadow.getElementById("pc-theme-btn").addEventListener("click", () => {
-    themeMenu.classList.toggle("pc-open");
+  hook(shadow, "pc-theme-btn")?.addEventListener("click", () => {
+    themeMenu?.classList.toggle("pc-open");
   });
 
-  for (const btn of themeMenu.querySelectorAll("[data-theme-choice]")) {
+  for (const btn of themeMenu?.querySelectorAll("[data-theme-choice]") ?? []) {
     btn.addEventListener("click", () => {
       saveSetting("theme", btn.dataset.themeChoice);
       applySettingsToSidebar();
@@ -135,11 +155,11 @@ function wireSidebarControls(shadow) {
     });
   }
 
-  shadow.getElementById("pc-collapse-btn").addEventListener("click", () => {
+  hook(shadow, "pc-collapse-btn")?.addEventListener("click", () => {
     saveSetting("collapsed", true);
     applySettingsToSidebar();
   });
-  shadow.getElementById("pc-tab").addEventListener("click", () => {
+  hook(shadow, "pc-tab")?.addEventListener("click", () => {
     // A drag that ends on the tab still fires a click — don't expand for it.
     if (suppressNextTabClick) {
       suppressNextTabClick = false;
@@ -159,7 +179,7 @@ function wireSidebarControls(shadow) {
   // no href to set, so open the stored URL on click — wired once here so
   // repeated detections never stack listeners. Starts hidden either way:
   // it only appears once a detection confirms who we'd be searching for.
-  const linkedIn = shadow.getElementById("pc-linkedin");
+  const linkedIn = hook(shadow, "pc-linkedin");
   if (linkedIn && linkedIn.tagName !== "A") {
     linkedIn.addEventListener("click", () => {
       if (linkedInUrl) window.open(linkedInUrl, "_blank", "noopener,noreferrer");
@@ -172,7 +192,7 @@ function wireSidebarControls(shadow) {
   // Clicking anywhere else in the sidebar closes the theme menu.
   shadow.addEventListener("click", (event) => {
     if (!event.target.closest("#pc-theme-menu") && !event.target.closest("#pc-theme-btn")) {
-      themeMenu.classList.remove("pc-open");
+      themeMenu?.classList.remove("pc-open");
     }
   });
 }
@@ -279,6 +299,7 @@ function applyPositions() {
   }
 
   const tab = sidebarRoot.querySelector("#pc-tab");
+  if (!tab) return;
   if (custom && typeof pos.tabY === "number") {
     tab.style.top = `${pos.tabY}px`;
   } else {
@@ -288,7 +309,13 @@ function applyPositions() {
 
 function wireDragging(shadow) {
   const header = shadow.querySelector(".pc-header");
-  const tab = shadow.getElementById("pc-tab");
+  const tab = hook(shadow, "pc-tab");
+  // Dragging is a nicety; if the restyle ever renames these, the sidebar
+  // should still mount and load results without it.
+  if (!header || !tab) {
+    console.warn("Professor Companion: drag handles missing — dragging disabled");
+    return;
+  }
 
   header.addEventListener("pointerdown", (event) => {
     if (bottomSheet.matches || event.button !== 0) return;
@@ -407,10 +434,13 @@ function syncSidebarToPath(onProfessorPage) {
 
 function updateSidebarIdentity(name, school) {
   if (!sidebarRoot) return;
-  sidebarRoot.querySelector("#pc-name").textContent = name;
-  sidebarRoot.querySelector("#pc-school").textContent = school;
+  const nameEl = hook(sidebarRoot, "pc-name");
+  if (nameEl) nameEl.textContent = name;
+  const schoolEl = hook(sidebarRoot, "pc-school");
+  if (schoolEl) schoolEl.textContent = school;
   // Identity-derived, so it rides identity updates: every successful
   // detection (including the mount backfill) refreshes the LinkedIn URL.
+  // Kept last but no longer hostage to the writes above.
   updateLinkedInLink(name, school);
 }
 
@@ -418,8 +448,10 @@ function updateSidebarIdentity(name, school) {
 // showing the previous professor while the new one loads.
 function resetSidebarIdentity() {
   if (!sidebarRoot) return;
-  sidebarRoot.querySelector("#pc-name").textContent = "Loading…";
-  sidebarRoot.querySelector("#pc-school").textContent = "";
+  const nameEl = hook(sidebarRoot, "pc-name");
+  if (nameEl) nameEl.textContent = "Loading…";
+  const schoolEl = hook(sidebarRoot, "pc-school");
+  if (schoolEl) schoolEl.textContent = "";
   // No confirmed professor during the transition — hide rather than leave
   // a link that would search for the professor we just left.
   hideLinkedInLink();
@@ -724,7 +756,14 @@ function attemptDetection() {
 
   console.log(`Detected: ${name}, ${school}`);
   lastLogged = { path: watchedPath, professorId, name, school, schoolId };
-  updateSidebarIdentity(name, school);
+  // Belt and braces after the Phase 5 outage: painting the header is
+  // cosmetic, searching Reddit is the product. A failure in the former must
+  // never stop the latter, whatever the template does next.
+  try {
+    updateSidebarIdentity(name, school);
+  } catch (err) {
+    console.warn(`Professor Companion: header update failed — ${err.message}`);
+  }
   // schoolId may be null (title-fallback path); reddit.js then falls back to
   // its name-based lookup rather than skipping the campus search.
   startRedditSearch(name, school, professorId, schoolId);
