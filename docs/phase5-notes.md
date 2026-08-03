@@ -62,12 +62,15 @@ delivering the answers to the wrong questions.
 ## Status and what remains
 - Quality loop: complete. Phase 5's gate is cleared, so the demo GIF and the
   Web Store publish are unblocked.
-- Phase 4 leftovers, now unblocked (Jinge landed the error card and the
-  16/48/128 PNGs on 7/28): wire the error state to her card, add the icons key
-  to manifest.json, open the Web Store developer account.
-- Phase 5 remaining: Jinge's restyle (flatten cards to rows, tool identity in
-  the header, demote the LinkedIn button), a 15-to-20-professor hardening pass
-  on the same rubric, then screenshots and the demo GIF.
+- Phase 4 leftovers: icons registered in the manifest on 8/3. Remaining are
+  the error-state wiring against Jinge's card and the Web Store developer
+  account.
+- Phase 5: the restyle landed on 8/2. Remaining is a 15-to-20-professor
+  hardening pass on the same rubric — weighted toward common surnames and
+  non-CUNY schools, since the last-name fallback and the sitewide-only path
+  are the newest and least-measured code — then design lock, screenshots, and
+  the demo GIF. The 8-of-9 result predates both the fallback merge and the
+  restyle, so it is evidence about the search, not about what ships.
 
 ---
 
@@ -91,5 +94,45 @@ Fix: dropped the dead initials writes, deleted the unused `initialsFrom`, and se
 
 ### Before publish
 - Design sign-off, then reshoot README screenshots (current ones are pre-restyle)
-- manifest.json: name, icon, and description all still say Professor Companion
-- Backup name needed — "RMP" is a trademark and the store rejects over it
+- manifest.json: name is now RMP Lookup and the 16/48/128 icons are registered
+  (both 8/3). The description still reads "Enhances professor pages with
+  publicly available academic information."
+- Old name still showing in popup.html, the README H1 and hero caption, and the
+  sidebar footer (which also still reads v0.1)
+- Trademark: name deliberately set to RMP Lookup for now, with backups held
+  (Course Companion, Prof Lookup, Campus Companion) — see the 8/3 log entry for
+  the listing mitigations
+
+---
+
+## Hardening the template contract (Antony)
+
+Jinge's two lessons above — a markup change is an API change, and the preview
+cannot catch integration breaks — are both about catching the mistake earlier.
+This is the other half: making the mistake cheap when it happens anyway.
+
+The outage was not really "an id got renamed." It was that a cosmetic DOM
+write sat upstream of two unrelated features on the same call path, so one
+null reference amputated everything below it, and every retry hit the same
+throw. Renaming ids is normal work between two people editing different files;
+one of them going quiet is not an acceptable price.
+
+Two changes, both about blast radius rather than blame:
+
+- **Every template lookup goes through a hook() helper** that warns and returns
+  null instead of throwing. A missing hook is now a console line and a gap in
+  the UI. This mattered most where the fix had unknowingly reproduced the
+  original pattern: the new logo `src` writes live in wireSidebarControls,
+  which runs inside mountSidebar BEFORE the host is appended to the page — a
+  null there would have taken down the entire sidebar, presenting as "the
+  extension didn't load" with no visible clue why. Same guard on the drag
+  wiring, which now disables itself rather than taking the mount with it.
+- **Paint is decoupled from data.** The identity update is wrapped so the
+  Reddit search runs regardless of what the header does. Guards should stop
+  anything from throwing at all; this is the structural statement underneath
+  them — the header is cosmetic, the search is the product, and the
+  presentation layer must not be able to stop the data layer.
+
+The general rule worth carrying into v2: when a DOM write and a network call
+share a call path, the DOM write is the fragile one, and it should never be
+the thing that decides whether the network call happens.

@@ -44,10 +44,12 @@ the fact.
 
 ## Status and gates
 - Done: show-more reset, LinkedIn button, README.
-- Remaining Phase 4, no longer blocked — Jinge landed the error card markup
-  and the 16/48/128 PNGs on 7/28, so both are now wiring jobs on our side:
-  connect the error state to her card, add the icons key to manifest.json,
-  open the Web Store developer account.
+- Icons: done 8/3. The manifest had no icons key at all, so Jinge's 7/28 PNGs
+  sat unregistered until then — a store-submission blocker hiding as a
+  cosmetic gap.
+- Remaining Phase 4: connect the error state to Jinge's card (markup landed
+  7/28, content.js still never sets data-state="error" or wires #pc-retry),
+  and open the Web Store developer account.
 - The quality loop that gated Phase 5 has since been run to completion; see
   docs/phase5-notes.md for the rounds, root causes, and method.
 

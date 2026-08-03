@@ -132,6 +132,19 @@ Completed: Phase 5 restyle done. Flattened post cards to rows (kept the quote, d
 Challenges: The restyle broke the live extension — no Reddit results, dead LinkedIn button — while the local preview looked fine. I'd replaced #pc-initials with a logo <img>, and content.js still wrote .textContent to it, so updateSidebarIdentity threw a null TypeError before it reached updateLinkedInLink and startRedditSearch. One dead line killed two unrelated features. Fixed in content.js and manifest.json (Antony's files, flagged to him directly).
 Next Steps: Lock the design with Antony, then reshoot README screenshots. His side before publish: manifest still says "Professor Companion 1.5.0" with the placeholder icon and old description, plus the hardening pass. We also need a backup name since "RMP" is Rate My Professors' trademark.
 
+## 8/3/2026 | Antony
+### Completed
+- Reviewed Jinge's content.js fix for the restyle breakage and kept it as written. Dropping the dead initials writes, deleting the now-unused initialsFrom, and setting the logo src through chrome.runtime.getURL was the correct set, and nothing stale was left referencing the old hooks.
+- Hardened the class of failure rather than the one instance. Every sidebar template lookup now goes through a hook() helper that warns and returns null instead of throwing, so a renamed id costs that one element instead of every feature on the lines below it. The new logo lines had actually reproduced the original pattern in a worse spot: wireSidebarControls runs inside mountSidebar BEFORE the host is appended to the page, so a null there would have killed the entire sidebar mount rather than two features — and it would have looked like the extension simply never loaded.
+- Decoupled paint from data: the identity update is now wrapped so startRedditSearch runs regardless of what the header does. Painting the header is cosmetic; searching Reddit is the product, and the first must never be able to stop the second.
+- manifest.json: registered the 16/48/128 icons — the key was missing entirely, so Jinge's PNGs had been sitting unused since 7/28 and would have blocked store submission — bumped to 1.6.0, and renamed the extension to RMP Lookup so the manifest agrees with the logo alt text and the restyled identity.
+### Challenges
+- The trademark question is decided for now, not resolved. "RMP" is Rate My Professors' mark, so the current name carries real rejection risk at the store. Backups on file: Course Companion, Prof Lookup, Campus Companion. Listing mitigations when we submit: keep the mark out of the name and short description, lead with what the tool does, use none of their logo or wordmark, and add a "not affiliated with or endorsed by Rate My Professors" line.
+### Next Steps
+- Mine: wire the error state to Jinge's card (the last Phase 4 item), run the 15-to-20-professor hardening pass weighted toward common surnames and non-CUNY schools, open the Web Store developer account.
+- Shared: lock the design, then Jinge reshoots the screenshots.
+- Still carrying the old name: popup.html title and heading, the README H1 and hero caption, and the sidebar footer (which also still reads v0.1). The manifest description is unchanged as well.
+
 ---
 
 # Team Responsibilities
