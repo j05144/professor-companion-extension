@@ -6,7 +6,7 @@
   "permissions": ["activeTab", "storage"],
   "web_accessible_resources": [
     {
-      "resources": ["sidebar.html", "styles.css"],
+      "resources": ["sidebar.html", "styles.css", "assets/logo.png"],
       "matches": ["https://*.ratemyprofessors.com/*"]
     }
   ],

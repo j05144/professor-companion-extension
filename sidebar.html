@@ -1,5 +1,5 @@
 <!--
-  Professor Companion · sidebar template
+  RMP Lookup · sidebar template
   Owner: Jinge (structure + all styling). Antony's content.js only touches
   elements marked with a "js hook" comment. Do not rename ids without telling him.
 
@@ -13,8 +13,9 @@
 <aside id="pc-root" data-state="loading" data-theme="light">
 
   <!-- ===== Floating tab (visible only when collapsed) ===== -->
-  <button id="pc-tab" title="Open Professor Companion">        <!-- js hook: click → expand -->
-    <span class="pc-tab-avatar" id="pc-tab-initials">··</span> <!-- js hook: initials -->
+  <button id="pc-tab" title="Open RMP Lookup"> <!-- js hook: click → expand -->
+    <img class="pc-tab-logo" id="pc-tab-logo" src="" alt="RMP Lookup">
+    <!-- js hook: set src to chrome.runtime.getURL("assets/logo.png") -->
     <span class="pc-tab-arrow">‹</span>
   </button>
 
@@ -22,19 +23,19 @@
   <div id="pc-card">
 
     <header class="pc-header">
-      <div class="pc-avatar" id="pc-initials">··</div>          <!-- js hook: initials -->
+      <img class="pc-logo-main" id="pc-logo-main" src="" alt="RMP Lookup"> <!-- js hook: set src to chrome.runtime.getURL("assets/logo.png") -->
       <div class="pc-idblock">
-        <div class="pc-name" id="pc-name">Loading…</div>        <!-- js hook: professor name -->
-        <div class="pc-school" id="pc-school"></div>            <!-- js hook: school · dept -->
+        <div class="pc-name" id="pc-name">Loading…</div> <!-- js hook: professor name -->
+        <div class="pc-school" id="pc-school"></div> <!-- js hook: school · dept -->
       </div>
+
       <div class="pc-actions">
         <button class="pc-iconbtn" id="pc-theme-btn" title="Theme">◐</button> <!-- js hook -->
-        <button class="pc-iconbtn" id="pc-star-btn" title="Save professor">☆</button> <!-- js hook -->
-        <button class="pc-iconbtn" id="pc-collapse-btn" title="Collapse">›</button>   <!-- js hook -->
+        <button class="pc-iconbtn" id="pc-collapse-btn" title="Collapse">›</button> <!-- js hook -->
       </div>
 
       <!-- Theme dropdown (hidden until .pc-open) -->
-      <div class="pc-theme-menu" id="pc-theme-menu">            <!-- js hook: toggle .pc-open -->
+      <div class="pc-theme-menu" id="pc-theme-menu"> <!-- js hook: toggle .pc-open -->
         <button data-theme-choice="light">☀ Light <span class="pc-check">✓</span></button>
         <button data-theme-choice="dark">☾ Dark <span class="pc-check">✓</span></button>
         <button data-theme-choice="auto">◐ Auto <span class="pc-check">✓</span></button>
@@ -62,7 +63,7 @@
 
       <!-- LOADED state: content.js appends <a class="pc-post"> cards here -->
       <input type="checkbox" id="pc-showmore-check" class="pc-showmore-check" aria-label="Show all Reddit posts">
-      <div id="pc-posts"></div>                                 <!-- js hook: post cards -->
+      <div id="pc-posts"></div> <!-- js hook: post cards -->
       <label for="pc-showmore-check" class="pc-showmore"></label>
       <!--
         Card template for renderSidebar(posts) — copy this structure per post:
@@ -77,14 +78,16 @@
       <div class="pc-empty">
         <div class="pc-empty-big">No discussions found yet</div>
         <div class="pc-empty-sub">Nothing in r/Baruch or r/CUNY mentions this professor so far.</div>
-        <a id="pc-empty-search" href="#" target="_blank" rel="noopener">Search Reddit ↗</a> <!-- js hook: scoped search URL -->
+        <a id="pc-empty-search" href="#" target="_blank" rel="noopener">Search Reddit ↗</a>
+        <!-- js hook: scoped search URL -->
       </div>
 
       <!-- ERROR state (shown when data-state="error") — fetch failures only -->
       <div class="pc-error">
         <div class="pc-error-big">Couldn't load discussions</div>
         <div class="pc-error-sub">Reddit didn't respond. This usually clears up in a moment.</div>
-        <button class="pc-retry" id="pc-retry" type="button">Try again</button> <!-- js hook: re-run the Reddit fetch -->
+        <button class="pc-retry" id="pc-retry" type="button">Try again</button>
+        <!-- js hook: re-run the Reddit fetch -->
       </div>
 
       <div class="pc-divider"></div>
@@ -95,6 +98,6 @@
 
     </div>
 
-    <footer class="pc-footer">Professor Companion · v0.1</footer>
+    <footer class="pc-footer">RMP Lookup · v0.1</footer>
   </div>
 </aside>

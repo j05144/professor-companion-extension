@@ -364,3 +364,61 @@
 #pc-root[data-state="error"] .pc-empty,
 #pc-root[data-state="error"] .pc-showmore,
 #pc-root[data-state="error"] #pc-count-label { display: none; }
+
+/* ===== Phase 5 restyle ===== */
+
+/* 1 · Flatten posts to rows (quote kept, card box removed) */
+#pc-posts { display: block; }
+.pc-post {
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--pc-line, #E9E7E2);
+  padding: 11px 2px;
+  margin: 0;
+}
+.pc-post:last-child { border-bottom: 0; }
+.pc-post:hover { background: none; }
+.pc-post:hover .pc-title { color: #3B6FD4; }
+
+/* 2 · Demote LinkedIn: outlined, LinkedIn blue (#0A66C2) */
+.pc-linkedin {
+  background: none;
+  color: #0A66C2;
+  font-weight: 600;
+  border: 1px solid #0A66C2;
+  border-radius: 9px;
+  padding: 9px;
+}
+.pc-linkedin:hover {
+  background: #0A66C2;
+  color: #fff;
+}
+
+/* 3 · Tool identity: corner mark */
+.pc-header { position: relative; }
+.pc-brandmark {
+  position: absolute;
+  top: -2px;
+  right: 30px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--pc-ink-soft, #6E7379);
+  pointer-events: none;
+}
+
+/* ---------- logo ---------- */
+.pc-logo-main {
+  width: 44px; height: 44px;
+  object-fit: contain;
+  flex: none;
+}
+.pc-tab-logo {
+  width: 28px; height: 28px;
+  object-fit: contain;
+  flex: none;
+}
+
+/* ---------- Search Reddit link in Reddit orange ---------- */
+#pc-empty-search { color: #D93A00; }
+#pc-root[data-theme="dark"] #pc-empty-search { color: #FF4500; }

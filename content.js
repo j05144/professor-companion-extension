@@ -117,6 +117,10 @@ async function mountSidebar() {
 }
 
 function wireSidebarControls(shadow) {
+  const logoUrl = chrome.runtime.getURL("assets/logo.png");
+  shadow.getElementById("pc-logo-main").src = logoUrl;
+  shadow.getElementById("pc-tab-logo").src = logoUrl;
+
   const themeMenu = shadow.getElementById("pc-theme-menu");
 
   shadow.getElementById("pc-theme-btn").addEventListener("click", () => {
@@ -401,20 +405,10 @@ function syncSidebarToPath(onProfessorPage) {
   }
 }
 
-function initialsFrom(name) {
-  const parts = name.split(/\s+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + last).toUpperCase() || "··";
-}
-
 function updateSidebarIdentity(name, school) {
   if (!sidebarRoot) return;
   sidebarRoot.querySelector("#pc-name").textContent = name;
   sidebarRoot.querySelector("#pc-school").textContent = school;
-  const initials = initialsFrom(name);
-  sidebarRoot.querySelector("#pc-initials").textContent = initials;
-  sidebarRoot.querySelector("#pc-tab-initials").textContent = initials;
   // Identity-derived, so it rides identity updates: every successful
   // detection (including the mount backfill) refreshes the LinkedIn URL.
   updateLinkedInLink(name, school);
@@ -426,8 +420,6 @@ function resetSidebarIdentity() {
   if (!sidebarRoot) return;
   sidebarRoot.querySelector("#pc-name").textContent = "Loading…";
   sidebarRoot.querySelector("#pc-school").textContent = "";
-  sidebarRoot.querySelector("#pc-initials").textContent = "··";
-  sidebarRoot.querySelector("#pc-tab-initials").textContent = "··";
   // No confirmed professor during the transition — hide rather than leave
   // a link that would search for the professor we just left.
   hideLinkedInLink();
