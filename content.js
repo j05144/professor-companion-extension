@@ -187,6 +187,21 @@ function wireSidebarControls(shadow) {
   }
   hideLinkedInLink();
 
+  // Retry re-runs the search for whichever professor is on screen NOW: it
+  // reads lastLogged at click time instead of capturing one, so a single
+  // listener wired here stays correct across every SPA navigation. Nothing
+  // needs a cache bypass — failed searches are never cached, so this always
+  // hits the network again. startRedditSearch takes a fresh ticket, so a
+  // slow first attempt landing later can't overwrite the retry's result.
+  hook(shadow, "pc-retry")?.addEventListener("click", () => {
+    if (!lastLogged || lastLogged.path !== location.pathname) {
+      console.warn("Professor Companion: retry ignored — no confirmed professor on this page");
+      return;
+    }
+    const { name, school, professorId, schoolId } = lastLogged;
+    startRedditSearch(name, school, professorId, schoolId);
+  });
+
   wireDragging(shadow);
 
   // Clicking anywhere else in the sidebar closes the theme menu.
@@ -522,9 +537,9 @@ async function startRedditSearch(name, school, professorId, schoolId) {
   } catch (err) {
     if (!stillCurrent()) return;
     console.warn(`Professor Companion: Reddit search failed — ${err.message}`);
-    // Failure wears the same empty card, but the "Search Reddit" link below
-    // still gives the user a manual path to the data we couldn't fetch.
-    showEmpty(name, school, { failed: true });
+    // A fetch failure is the retryable case, so it gets the error card.
+    // (Detection give-up still uses the empty card — see onDetectionTimeout.)
+    showError();
   }
 }
 
@@ -542,37 +557,60 @@ function resetShowMore() {
 function showSearching() {
   if (!sidebarRoot) return;
   sidebarRoot.dataset.state = "loading";
-  sidebarRoot.querySelector("#pc-posts").replaceChildren();
+  const posts = hook(sidebarRoot, "pc-posts");
+  if (posts) posts.replaceChildren();
   resetShowMore();
-  sidebarRoot.querySelector("#pc-count-label").textContent = "Reddit mentions · searching…";
+  const label = hook(sidebarRoot, "pc-count-label");
+  if (label) label.textContent = "Reddit mentions · searching…";
 }
 
 function showResults(threads) {
   if (!sidebarRoot) return;
-  const posts = sidebarRoot.querySelector("#pc-posts");
-  posts.replaceChildren();
-  for (const thread of threads) {
-    posts.append(buildPostCard(thread));
+  const posts = hook(sidebarRoot, "pc-posts");
+  if (posts) {
+    posts.replaceChildren();
+    for (const thread of threads) {
+      posts.append(buildPostCard(thread));
+    }
   }
-  sidebarRoot.querySelector("#pc-count-label").textContent = `Reddit mentions · ${threads.length}`;
+  const label = hook(sidebarRoot, "pc-count-label");
+  if (label) label.textContent = `Reddit mentions · ${threads.length}`;
   sidebarRoot.dataset.state = "loaded";
 }
 
 function showEmpty(name, school, { failed }) {
   if (!sidebarRoot) return;
-  sidebarRoot.querySelector("#pc-posts").replaceChildren();
-  sidebarRoot.querySelector("#pc-count-label").textContent = failed
-    ? "Reddit mentions · unavailable"
-    : "Reddit mentions · 0";
+  const posts = hook(sidebarRoot, "pc-posts");
+  if (posts) posts.replaceChildren();
+  const label = hook(sidebarRoot, "pc-count-label");
+  if (label) {
+    label.textContent = failed ? "Reddit mentions · unavailable" : "Reddit mentions · 0";
+  }
   // Same query our sitewide search uses, as a reddit.com URL the user can
   // open themselves — set in both the zero-results and failure cases.
   // Degrades when detection never confirmed a name (timeout give-up):
   // fall back to Reddit's plain search page rather than a stale query.
   const query = name ? encodeURIComponent(`"${name}"${school ? ` ${school}` : ""}`) : "";
-  sidebarRoot.querySelector("#pc-empty-search").href = query
-    ? `https://www.reddit.com/search/?q=${query}`
-    : "https://www.reddit.com/search/";
+  const search = hook(sidebarRoot, "pc-empty-search");
+  if (search) {
+    search.href = query ? `https://www.reddit.com/search/?q=${query}` : "https://www.reddit.com/search/";
+  }
   sidebarRoot.dataset.state = "empty";
+}
+
+// Fetch failures only, per the locked design: this is the card that offers a
+// retry, and retrying only means something when we know which professor to
+// search again. Detection give-up keeps the empty card with its manual
+// search link, because there is no confirmed professor to retry for.
+//
+// The count label is hidden by CSS in this state, so it is left alone —
+// whichever terminal state comes next will set it.
+function showError() {
+  if (!sidebarRoot) return;
+  const posts = hook(sidebarRoot, "pc-posts");
+  if (posts) posts.replaceChildren();
+  resetShowMore();
+  sidebarRoot.dataset.state = "error";
 }
 
 // Every piece of Reddit text lands via textContent, never innerHTML: titles
