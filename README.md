@@ -1,4 +1,4 @@
-# Professor Companion
+# Prof Lookup
 
 A Chrome extension (Manifest V3) that enriches Rate My Professors professor pages with what students actually say — real Reddit discussions, surfaced in a sidebar right on the professor's page, plus a one-click LinkedIn lookup.
 
@@ -46,7 +46,7 @@ After editing code, click the extension's **reload** (↻) button on `chrome://e
 
 ## Screenshots
 
-[Professor Companion on a Rate My Professors page](assets/screenshot-hero.png)
+[Prof Lookup on a Rate My Professors page](assets/screenshot-hero.png)
 
 | Light | Dark | Collapsed |
 |---|---|---|

@@ -1,5 +1,5 @@
 <!--
-  RMP Lookup · sidebar template
+  Prof Lookup · sidebar template
   Owner: Jinge (structure + all styling). Antony's content.js only touches
   elements marked with a "js hook" comment. Do not rename ids without telling him.
 
@@ -13,8 +13,8 @@
 <aside id="pc-root" data-state="loading" data-theme="light">
 
   <!-- ===== Floating tab (visible only when collapsed) ===== -->
-  <button id="pc-tab" title="Open RMP Lookup"> <!-- js hook: click → expand -->
-    <img class="pc-tab-logo" id="pc-tab-logo" src="" alt="RMP Lookup">
+  <button id="pc-tab" title="Open Prof Lookup"> <!-- js hook: click → expand -->
+    <img class="pc-tab-logo" id="pc-tab-logo" src="" alt="Prof Lookup">
     <!-- js hook: set src to chrome.runtime.getURL("assets/logo.png") -->
     <span class="pc-tab-arrow">‹</span>
   </button>
@@ -23,7 +23,7 @@
   <div id="pc-card">
 
     <header class="pc-header">
-      <img class="pc-logo-main" id="pc-logo-main" src="" alt="RMP Lookup"> <!-- js hook: set src to chrome.runtime.getURL("assets/logo.png") -->
+      <img class="pc-logo-main" id="pc-logo-main" src="" alt="Prof Lookup"> <!-- js hook: set src to chrome.runtime.getURL("assets/logo.png") -->
       <div class="pc-idblock">
         <div class="pc-name" id="pc-name">Loading…</div> <!-- js hook: professor name -->
         <div class="pc-school" id="pc-school"></div> <!-- js hook: school · dept -->
@@ -98,6 +98,6 @@
 
     </div>
 
-    <footer class="pc-footer">RMP Lookup · v0.1</footer>
+    <footer class="pc-footer">Prof Lookup · v1.6.0</footer>
   </div>
 </aside>
