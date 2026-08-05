@@ -47,9 +47,12 @@ the fact.
 - Icons: done 8/3. The manifest had no icons key at all, so Jinge's 7/28 PNGs
   sat unregistered until then — a store-submission blocker hiding as a
   cosmetic gap.
-- Remaining Phase 4: connect the error state to Jinge's card (markup landed
-  7/28, content.js still never sets data-state="error" or wires #pc-retry),
-  and open the Web Store developer account.
+- Error state: wired 8/3 against Jinge's card, keeping the fetch-failures-only
+  split decided here — detection give-up still gets the empty card, because a
+  retry button needs a confirmed professor to retry for. Reasoning and the
+  retry mechanics are in docs/phase5-notes.md.
+- Remaining Phase 4: open the Web Store developer account. That is the last
+  item, and it is an errand rather than engineering.
 - The quality loop that gated Phase 5 has since been run to completion; see
   docs/phase5-notes.md for the rounds, root causes, and method.
 

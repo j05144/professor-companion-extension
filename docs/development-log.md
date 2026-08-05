@@ -6,7 +6,7 @@ This document tracks our progress, key decisions, challenges, and next steps thr
 
 ## Project Status
 
-**Current Phase:** Phase 5 | Quality + Launch prep (quality loop complete, its gate cleared; Phase 4 leftovers open: error-state wiring, manifest icons, store account)
+**Current Phase:** Phase 5 | Launch prep (design locked, name settled, all four sidebar states wired; remaining: hardening pass, screenshots and demo GIF, Web Store account)
 
 **Current Direction:** Chrome extension MVP on RMP pages -> quality pass -> Chrome Web Store publish. Standalone site and AI summary deferred to v2.
 
@@ -149,6 +149,19 @@ Next Steps: Lock the design with Antony, then reshoot README screenshots. His si
 Completed: Finished the Phase 5 polish pass. Removed the dead CSS left from the star button, avatar, and brandmark, keeping --pc-avatar-bg/--pc-avatar-ink since the icon buttons and theme menu still use them. Regenerated the 16/48/128 icons from the real logo — the committed ones were still the placeholder cap design and had never matched the brand. Made the retry button Reddit orange to match the Search Reddit link. Reviewed and agreed with Antony's hardening commit: the hook() guard, and decoupling the header paint from the Reddit search so a cosmetic failure can't stop the product. Settled the name on Prof Lookup, swept the remaining old-name strings out of content.js, reddit.js, and background.js (13 console prefixes and file headers — user-visible in console output, so not history the way the docs and mockups are), fixed the README hero image markdown and the stale star-button roadmap line, removed the placeholder Demo section, and reshot all seven README screenshots against the locked design.
 Challenges: Pasted the retry-orange CSS a second time without realizing it was already in the file — caught in review before committing, but it would have re-added exactly the kind of duplicate rule I had just cleaned out. Reading the diff beats trusting memory about what is already applied.
 Next Steps: Chrome Web Store submission — developer account, listing assets, and store copy.
+
+## 8/4/2026 | Antony
+### Completed
+- Wired the error state and retry button against Jinge's card, which closes the last Phase 4 code item. All four sidebar states now route: results to loaded, zero results to empty, a fetch failure to the error card, and detection give-up back to the empty card with its manual search link.
+- Held the boundary we agreed in Phase 4 rather than routing every failure to the new card. A retry button promises that pressing it does something specific; after a fetch failure we know which professor to ask about again, so the promise is real, but after a detection give-up there is no confirmed professor and the button would be an apology shaped like a solution.
+- Retry reads lastLogged at click time instead of capturing a professor, so one listener stays correct across SPA navigations. No cache bypass needed since failed searches are never cached, and it takes a fresh request ticket so a slow original attempt landing later cannot overwrite the newer result.
+- Design locked with Jinge as shipped: flat rows, blue outlined LinkedIn, logo in the header and collapsed tab, star gone. She had already pushed the CSS cleanup and swapped the extension icons to the real logo.
+- Name settled: RMP Lookup lasted one day as a deliberate placeholder, then became Prof Lookup. Recognisability is worth nothing if the listing never goes live, and "RMP" is Rate My Professors' mark. Swept everywhere it ships — manifest, both logo alt strings, the collapsed tab's hover title, the footer, popup.html, and the README — and synced the footer version to 1.6.0 so nothing in a screenshot contradicts anything else. The mockups and the dated log entries keep the old names on purpose; they are a record of what was true then.
+### Challenges
+- The footer was the near miss. It sits in frame for every screenshot, and it was carrying both a stale name and v0.1 against a manifest at 1.6.0 — one shoot away from a full reshoot. Worth generalising: before capturing anything, read the strings that are actually visible in the frame, not just the ones you edited.
+### Next Steps
+- Mine: the 15-to-20-professor hardening pass, weighted toward common surnames and non-CUNY schools, then the Web Store developer account.
+- Jinge had already reshot all seven README screenshots against the locked design and dropped the placeholder Demo section, so what is left for launch is the submission itself: listing assets and store copy.
 
 ---
 

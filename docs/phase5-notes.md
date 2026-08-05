@@ -62,15 +62,16 @@ delivering the answers to the wrong questions.
 ## Status and what remains
 - Quality loop: complete. Phase 5's gate is cleared, so the demo GIF and the
   Web Store publish are unblocked.
-- Phase 4 leftovers: icons registered in the manifest on 8/3. Remaining are
-  the error-state wiring against Jinge's card and the Web Store developer
-  account.
-- Phase 5: the restyle landed on 8/2. Remaining is a 15-to-20-professor
-  hardening pass on the same rubric — weighted toward common surnames and
-  non-CUNY schools, since the last-name fallback and the sitewide-only path
-  are the newest and least-measured code — then design lock, screenshots, and
-  the demo GIF. The 8-of-9 result predates both the fallback merge and the
-  restyle, so it is evidence about the search, not about what ships.
+- Phase 4: closed out. Icons registered 8/3, error state wired 8/3. The Web
+  Store developer account is the only item left, and it is an errand rather
+  than engineering.
+- Phase 5: the restyle landed 8/2, the design was locked 8/4, and the name
+  settled the same day. Remaining is a 15-to-20-professor hardening pass on
+  the same rubric — weighted toward common surnames and non-CUNY schools,
+  since the last-name fallback and the sitewide-only path are the newest and
+  least-measured code — then screenshots and the demo GIF. The 8-of-9 result
+  predates the fallback merge, the restyle, and the rename, so it is evidence
+  about the search, not about what ships.
 
 ---
 
@@ -93,15 +94,20 @@ Two lessons: **a markup change is an API change** — sidebar.html's ids are a c
 Fix: dropped the dead initials writes, deleted the unused `initialsFrom`, and set the logo src once in `wireSidebarControls` via `chrome.runtime.getURL` (required inside the Shadow DOM, which is also why `assets/logo.png` needed adding to `web_accessible_resources`).
 
 ### Before publish
-- Design sign-off, then reshoot README screenshots (current ones are pre-restyle)
-- manifest.json: name is now RMP Lookup and the 16/48/128 icons are registered
-  (both 8/3). The description still reads "Enhances professor pages with
-  publicly available academic information."
-- Old name still showing in popup.html, the README H1 and hero caption, and the
-  sidebar footer (which also still reads v0.1)
-- Trademark: name deliberately set to RMP Lookup for now, with backups held
-  (Course Companion, Prof Lookup, Campus Companion) — see the 8/3 log entry for
-  the listing mitigations
+- Design signed off 8/4. Screenshots reshoot off the locked design (the ones
+  currently in the README are pre-restyle).
+- manifest.json: icons registered 8/3, name settled 8/4 (see below). The
+  description still reads "Enhances professor pages with publicly available
+  academic information" — trademark-free, so it can ship as is.
+- Naming, resolved: RMP Lookup was a deliberate placeholder for one day, then
+  replaced by **Prof Lookup** on 8/4 once the trademark risk was weighed
+  against the recognisability it bought. "RMP" is Rate My Professors' mark, and
+  the store rejects over marks in the name, so the recognisability was worth
+  nothing if the listing never went live. Swept everywhere it ships — manifest,
+  both logo alt strings, the collapsed tab's hover title, the footer (now also
+  version-synced to 1.6.0), popup.html, and the README. The mockups and the
+  dated log entries deliberately keep the old names: they are a record of what
+  was true then, and rewriting them would erase the trail the rename left.
 
 ---
 
@@ -137,9 +143,35 @@ The general rule worth carrying into v2: when a DOM write and a network call
 share a call path, the DOM write is the fragile one, and it should never be
 the thing that decides whether the network call happens.
 
+## Error state and retry (Antony)
+
+Wired 8/3 against Jinge's card, and it holds the split the two of us agreed
+on back in Phase 4: **the error card covers fetch failures only.** The sidebar
+now routes four ways — results to `loaded`, zero results to `empty`, a fetch
+failure to `error`, and detection give-up back to `empty` with its manual
+search link.
+
+That last one is the interesting boundary, and it is worth restating because
+it looks like an inconsistency until you say it out loud: a retry button is a
+promise that pressing it does something specific. If the Reddit fetch failed
+we know exactly which professor to ask about again, so the promise is real. If
+detection never confirmed a professor there is nothing to retry — the button
+would be an apology shaped like a solution. That case keeps the empty card,
+whose manual search link is the only affordance that still works without a
+confirmed professor.
+
+Two details in the retry itself:
+- It reads `lastLogged` at click time rather than capturing a professor when
+  the listener is wired, so one listener stays correct across every SPA
+  navigation — the same reason the LinkedIn button reads a variable instead of
+  a closure.
+- It needs no cache bypass, because failed searches are never cached; and it
+  takes a fresh request ticket, so if the original slow attempt lands after
+  the retry it cannot overwrite the newer result.
+
 ---
 
-### Icons, color, and the final name sweep
+## Icons, color, and the final name sweep (Jinge)
 
 The committed icons were still the placeholder cap design from before the logo
 existed, and nothing had caught it because manifest.json had no icons key at all
