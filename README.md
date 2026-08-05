@@ -46,7 +46,7 @@ After editing code, click the extension's **reload** (↻) button on `chrome://e
 
 ## Screenshots
 
-[Prof Lookup on a Rate My Professors page](assets/screenshot-hero.png)
+![Prof Lookup on a Rate My Professors page](assets/screenshot-hero.png)
 
 | Light | Dark | Collapsed |
 |---|---|---|
@@ -61,12 +61,6 @@ get a real screen instead of a blank card.
 |---|---|---|
 | ![Loading](assets/state-loading.png) | ![Empty state](assets/state-empty.png) | ![Error state](assets/state-error.png) |
 
-## Demo
-
-<!-- TODO: add demo GIF (search page → professor → sidebar loads → show more → LinkedIn) -->
-
-*Coming soon.*
-
 ## Built By
 
 - **Antony Wu** — product & extension logic: `content.js`, `reddit.js`, `background.js`, `manifest.json`
@@ -76,6 +70,6 @@ get a real screen instead of a blank card.
 
 - **AI summary card** — a short summary of the fetched threads (IBM watsonx behind a small proxy, the project's first backend). Hard constraint, stated verbatim: **summarizes only fetched posts, never model knowledge about the professor.**
 - **LinkedIn one-click** — jump straight to the top profile result (Google CSE API) instead of a search page.
-- **Saved professors** — the star button gets a home: a saved-professors view.
+- **Saved professors** — save professors you're considering and see them in one place.
 - **Progressive disclosure & drag docking** — richer card interactions and snap-to-edge sidebar placement.
 - **Standalone web app** — evaluate expanding beyond the extension once the MVP is published.

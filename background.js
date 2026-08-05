@@ -1,4 +1,4 @@
-// Professor Companion — background service worker.
+// Prof Lookup — background service worker.
 //
 // Its only job so far: fetch Reddit JSON on behalf of content scripts.
 // Content scripts inherit ratemyprofessors.com's origin, so the same-origin

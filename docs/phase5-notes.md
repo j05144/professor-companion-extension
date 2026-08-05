@@ -136,3 +136,26 @@ Two changes, both about blast radius rather than blame:
 The general rule worth carrying into v2: when a DOM write and a network call
 share a call path, the DOM write is the fragile one, and it should never be
 the thing that decides whether the network call happens.
+
+---
+
+### Icons, color, and the final name sweep
+
+The committed icons were still the placeholder cap design from before the logo
+existed, and nothing had caught it because manifest.json had no icons key at all
+until 3721489 — the PNGs had been sitting in assets/ unregistered since 7/28.
+Regenerating them from the real logo meant cropping to the artwork and filling
+the frame, since the source had padding baked in that made the icon read small
+in the toolbar. At 16px the bubble and cap still collapse into an orange blob;
+a simplified cap-only variant is the obvious follow-up if it bothers us in use.
+
+The retry button now uses the same Reddit orange as the Search Reddit link
+(#D93A00 light, #FF4500 dark). Both are Reddit-directed actions, so they should
+read as the same kind of thing — the LinkedIn button stays LinkedIn blue for
+exactly the same reason.
+
+On the rename: the sweep covered shipped code as well as the UI, including
+thirteen console.warn/error prefixes in content.js, reddit.js, and background.js.
+Console output is user-visible, so it is part of the product surface, not part of
+the historical record. The dated log entries and the Phase 2 wireframes keep the
+old names deliberately — rewriting those would make the rename untraceable.

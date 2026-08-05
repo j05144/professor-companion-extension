@@ -145,6 +145,11 @@ Next Steps: Lock the design with Antony, then reshoot README screenshots. His si
 - Shared: lock the design, then Jinge reshoots the screenshots.
 - Still carrying the old name: popup.html title and heading, the README H1 and hero caption, and the sidebar footer (which also still reads v0.1). The manifest description is unchanged as well.
 
+## 8/3/2026 | Jinge
+Completed: Finished the Phase 5 polish pass. Removed the dead CSS left from the star button, avatar, and brandmark, keeping --pc-avatar-bg/--pc-avatar-ink since the icon buttons and theme menu still use them. Regenerated the 16/48/128 icons from the real logo — the committed ones were still the placeholder cap design and had never matched the brand. Made the retry button Reddit orange to match the Search Reddit link. Reviewed and agreed with Antony's hardening commit: the hook() guard, and decoupling the header paint from the Reddit search so a cosmetic failure can't stop the product. Settled the name on Prof Lookup, swept the remaining old-name strings out of content.js, reddit.js, and background.js (13 console prefixes and file headers — user-visible in console output, so not history the way the docs and mockups are), fixed the README hero image markdown and the stale star-button roadmap line, removed the placeholder Demo section, and reshot all seven README screenshots against the locked design.
+Challenges: Pasted the retry-orange CSS a second time without realizing it was already in the file — caught in review before committing, but it would have re-added exactly the kind of duplicate rule I had just cleaned out. Reading the diff beats trusting memory about what is already applied.
+Next Steps: Chrome Web Store submission — developer account, listing assets, and store copy.
+
 ---
 
 # Team Responsibilities

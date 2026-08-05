@@ -1,4 +1,4 @@
-// Professor Companion — Reddit thread search (Phase 3, no UI yet).
+// Prof Lookup — Reddit thread search (Phase 3, no UI yet).
 //
 // fetchRedditThreads(professorName, school, schoolId) is the public entry
 // point (schoolId is RMP's numeric school ID, optional). It
@@ -155,7 +155,7 @@ async function fetchRedditThreads(professorName, school, schoolId) {
     throw new Error(`All Reddit searches failed — ${failures.join("; ")}`);
   }
   if (failures.length > 0) {
-    console.warn(`Professor Companion: partial Reddit results — ${failures.join("; ")}`);
+    console.warn(`Prof Lookup: partial Reddit results — ${failures.join("; ")}`);
   } else {
     // Cache only complete results: pinning a partial (one search failed)
     // for 10 minutes would hide a recovery the very next navigation might
@@ -307,7 +307,7 @@ function makeSnippet(selftext) {
 // limiting (HTTP 429).
 //
 // For one-off manual tests: in DevTools, switch the console's context
-// dropdown from "top" to "Professor Companion", then run e.g.
+// dropdown from "top" to "Prof Lookup", then run e.g.
 //   await fetchRedditThreads("Jane Doe", "Baruch College")
 
 const REDDIT_TEST_MODE = false;
@@ -321,7 +321,7 @@ const REDDIT_TEST_CASES = [
 
 async function runRedditSelfTest() {
   for (const { professorName, school } of REDDIT_TEST_CASES) {
-    console.log(`Professor Companion — Reddit search: ${professorName} (${school})`);
+    console.log(`Prof Lookup — Reddit search: ${professorName} (${school})`);
     try {
       const threads = await fetchRedditThreads(professorName, school);
       console.log(`${threads.length} thread(s) found`);
@@ -331,7 +331,7 @@ async function runRedditSelfTest() {
         console.log(threads); // full objects (snippet + url), expandable
       }
     } catch (err) {
-      console.error(`Professor Companion: Reddit search failed — ${err.message}`);
+      console.error(`Prof Lookup: Reddit search failed — ${err.message}`);
     }
   }
 }

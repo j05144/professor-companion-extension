@@ -1,4 +1,4 @@
-// Professor Companion — content script.
+// Prof Lookup — content script.
 //
 // Sections:
 //   1. Settings      — chrome.storage.local persistence (theme, collapsed)
@@ -59,7 +59,7 @@ let mountPromise = null; // guards against two concurrent mounts
 // warning, never the features downstream of it.
 function hook(root, id) {
   const node = root?.querySelector(`#${id}`) ?? null;
-  if (!node) console.warn(`Professor Companion: sidebar template has no #${id}`);
+  if (!node) console.warn(`Prof Lookup: sidebar template has no #${id}`);
   return node;
 }
 
@@ -195,7 +195,7 @@ function wireSidebarControls(shadow) {
   // slow first attempt landing later can't overwrite the retry's result.
   hook(shadow, "pc-retry")?.addEventListener("click", () => {
     if (!lastLogged || lastLogged.path !== location.pathname) {
-      console.warn("Professor Companion: retry ignored — no confirmed professor on this page");
+      console.warn("Prof Lookup: retry ignored — no confirmed professor on this page");
       return;
     }
     const { name, school, professorId, schoolId } = lastLogged;
@@ -328,13 +328,13 @@ function wireDragging(shadow) {
   // Dragging is a nicety; if the restyle ever renames these, the sidebar
   // should still mount and load results without it.
   if (!header || !tab) {
-    console.warn("Professor Companion: drag handles missing — dragging disabled");
+    console.warn("Prof Lookup: drag handles missing — dragging disabled");
     return;
   }
 
   header.addEventListener("pointerdown", (event) => {
     if (bottomSheet.matches || event.button !== 0) return;
-    // The header hosts the theme/star/collapse buttons and the theme menu;
+    // The header hosts the theme/collapse buttons and the theme menu;
     // drags must not start from any of them.
     if (event.target.closest(".pc-iconbtn") || event.target.closest("#pc-theme-menu")) return;
 
@@ -439,7 +439,7 @@ function syncSidebarToPath(onProfessorPage) {
       sidebarHost.hidden = false;
     } else {
       mountSidebar().catch((err) => {
-        console.warn(`Professor Companion: sidebar failed to mount — ${err.message}`);
+        console.warn(`Prof Lookup: sidebar failed to mount — ${err.message}`);
       });
     }
   } else if (sidebarHost) {
@@ -536,7 +536,7 @@ async function startRedditSearch(name, school, professorId, schoolId) {
     }
   } catch (err) {
     if (!stillCurrent()) return;
-    console.warn(`Professor Companion: Reddit search failed — ${err.message}`);
+    console.warn(`Prof Lookup: Reddit search failed — ${err.message}`);
     // A fetch failure is the retryable case, so it gets the error card.
     // (Detection give-up still uses the empty card — see onDetectionTimeout.)
     showError();
@@ -800,7 +800,7 @@ function attemptDetection() {
   try {
     updateSidebarIdentity(name, school);
   } catch (err) {
-    console.warn(`Professor Companion: header update failed — ${err.message}`);
+    console.warn(`Prof Lookup: header update failed — ${err.message}`);
   }
   // schoolId may be null (title-fallback path); reddit.js then falls back to
   // its name-based lookup rather than skipping the campus search.
@@ -816,7 +816,7 @@ function onDetectionTimeout() {
   // empty card keeps the manual search link as an escape hatch — and even
   // that only borrows the DOM's name if it clears the same staleness gate,
   // so the link can't search for the previous page's professor.
-  console.warn("Professor Companion: could not confirm professor info — giving up.");
+  console.warn("Prof Lookup: could not confirm professor info — giving up.");
   let name = getNameFromDom();
   if (!navSnapshot.initial && name === navSnapshot.name) name = null;
   showEmpty(name, getSchoolFromDom(), { failed: true });
