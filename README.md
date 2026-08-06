@@ -73,3 +73,7 @@ get a real screen instead of a blank card.
 - **Saved professors** — save professors you're considering and see them in one place.
 - **Progressive disclosure & drag docking** — richer card interactions and snap-to-edge sidebar placement.
 - **Standalone web app** — evaluate expanding beyond the extension once the MVP is published.
+
+## License
+
+Copyright (c) 2026 Jinge Huang and Antony Wu. All rights reserved.
