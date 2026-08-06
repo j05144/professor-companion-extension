@@ -65,13 +65,19 @@ delivering the answers to the wrong questions.
 - Phase 4: closed out. Icons registered 8/3, error state wired 8/3. The Web
   Store developer account is the only item left, and it is an errand rather
   than engineering.
-- Phase 5: the restyle landed 8/2, the design was locked 8/4, and the name
-  settled the same day. Remaining is a 15-to-20-professor hardening pass on
-  the same rubric — weighted toward common surnames and non-CUNY schools,
-  since the last-name fallback and the sitewide-only path are the newest and
-  least-measured code — then screenshots and the demo GIF. The 8-of-9 result
-  predates the fallback merge, the restyle, and the rename, so it is evidence
-  about the search, not about what ships.
+- Phase 5: the restyle landed 8/2, the design was locked 8/4, the name settled
+  the same day, and screenshots were reshot off the locked design.
+- The 15-to-20-professor hardening pass did NOT run before the v1.6.0
+  submission on 8/5. It is outstanding, and it belongs to a follow-up release.
+- What that does and does not mean, stated precisely, because the earlier
+  wording here undersold it: Round 2 measured the last-name fallback itself,
+  and no search logic has changed since — the only edits to reddit.js between
+  that measurement and the shipped build were console prefixes and comments
+  renamed to Prof Lookup. So v1.6.0 ships the exact search behaviour that
+  scored 8 of 9. The gap is breadth, not version: 10 professors, heavily
+  CUNY-weighted, one non-CUNY case, one control. What remains unmeasured is
+  how the last-name fallback behaves on common surnames at scale and how the
+  sitewide-only path serves schools with no campus mapping.
 
 ---
 

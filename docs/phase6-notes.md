@@ -105,7 +105,16 @@ script runs again for the next release's screenshots.
   further is needed on the submission itself — auto-publish means approval
   is the only remaining gate.
 - Correct the storage justification's known discrepancy (position isn't
-  mentioned) in the next submission.
-- Open question carried from Phase 5: whether Antony's 15-to-20-professor
-  hardening pass landed before this build or still needs to happen for a
-  follow-up release. It doesn't block this submission either way.
+  mentioned) in the next submission. Verified against DEFAULT_SETTINGS in
+  content.js, the complete list is exactly three keys and nothing else:
+  theme ("light" | "dark" | "auto"), collapsed (boolean), and position (the
+  card's x/y and the collapsed tab's y). All local UI preferences, no
+  personal data, never leaves the device. Wording that covers all three:
+  "Stores the user's own display preferences locally — colour theme,
+  whether the sidebar is collapsed, and where the user has dragged it — so
+  the sidebar reopens the way they left it. No personal or browsing data is
+  stored, and nothing is transmitted."
+- Open question from Phase 5, now closed: the 15-to-20-professor hardening
+  pass did NOT run before this build. It is still outstanding and belongs to
+  a follow-up release. See the 8/5 log entry for why v1.6.0 nonetheless
+  shipped on measured evidence rather than none.

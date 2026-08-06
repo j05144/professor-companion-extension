@@ -178,6 +178,18 @@ Next Steps: Chrome Web Store submission — developer account, listing assets, a
 - Wait on review; auto-publish means no further action is needed once Google approves.
 - Confirm with Antony whether the 15-to-20-professor hardening pass landed before this build or still needs to happen for a follow-up release — it doesn't block this submission either way.
 
+## 8/5/2026 | Antony
+### Completed
+- Answered Jinge's open question: the 15-to-20-professor hardening pass did NOT run before this build. It was never started — QUALITY_TEST is still false with QUALITY_TEST_CASES holding only its commented-out placeholder, and every doc since 8/1 has carried it as outstanding. It moves to a follow-up release.
+- Established what v1.6.0 actually shipped on, since "the hardening pass didn't run" reads worse than the facts warrant. Round 2 of the quality loop measured the last-name fallback itself, and no search logic has changed since: the only edits to reddit.js between that measurement and the submitted build were console prefixes and comments renamed to Prof Lookup. So the shipped search behaviour is exactly what scored 8 of 9. The gap is breadth, not version — 10 professors, heavily CUNY-weighted, with one non-CUNY case and one control.
+- Corrected the phase 5 notes, which had claimed the 8-of-9 result "predates the fallback merge, the restyle, and the rename, so it is evidence about the search, not about what ships." True about the restyle and rename, misleading about the fallback: the fallback is what Round 2 measured. The note now states the real limitation, which is roster breadth.
+- Verified the storage justification gap Jinge caught, and wrote replacement wording into docs/phase6-notes.md ready to paste at the next submission. DEFAULT_SETTINGS holds exactly three keys — theme, collapsed, position — so the corrected justification is complete, not merely less wrong.
+### Challenges
+- Worth writing down before it bites us: pushing to main does not update the store. Any shipped change needs a manifest version bump, a fresh zip, and a re-upload, and Google rejects an upload whose version has not increased. The repo and the published extension are now two separate things that can silently drift.
+### Next Steps
+- The hardening pass, weighted toward common surnames and non-CUNY schools, since those are the least-measured paths. Its results, plus the corrected storage justification, are the natural contents of v1.7.
+- Nothing to do on the submission itself while it sits in review.
+
 ---
 
 # Team Responsibilities
