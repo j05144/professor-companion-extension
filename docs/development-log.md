@@ -6,7 +6,7 @@ This document tracks our progress, key decisions, challenges, and next steps thr
 
 ## Project Status
 
-**Current Phase:** Phase 5 | Launch prep (design locked, name settled, all four sidebar states wired; remaining: hardening pass, screenshots and demo GIF, Web Store account)
+**Current Phase:** Phase 6 | Submitted for review (Prof Lookup v1.6.0 submitted to the Chrome Web Store; pending Google's in-depth review, auto-publish on approval)
 
 **Current Direction:** Chrome extension MVP on RMP pages -> quality pass -> Chrome Web Store publish. Standalone site and AI summary deferred to v2.
 
@@ -162,6 +162,21 @@ Next Steps: Chrome Web Store submission — developer account, listing assets, a
 ### Next Steps
 - Mine: the 15-to-20-professor hardening pass, weighted toward common surnames and non-CUNY schools, then the Web Store developer account.
 - Jinge had already reshot all seven README screenshots against the locked design and dropped the placeholder Demo section, so what is left for launch is the submission itself: listing assets and store copy.
+
+## 8/5/2026 | Jinge
+### Completed
+- Built scripts/make_store_screenshots.py: takes the five README screenshots, pads each onto a 1280x800 canvas in the brand background color (#EDEDEA), and drops them in a store-screenshots folder on the Desktop as store-1 through store-5, matching the Chrome Web Store's fixed screenshot size.
+- Made the repo public. No LICENSE file exists, so all rights are reserved by default; added an explicit copyright line to the README (Jinge Huang and Antony Wu, 2026) so a now-public repo isn't left with no visible terms at all.
+- Added PRIVACY.md at the repo root for the store listing's privacy policy link.
+- Filled out the store listing: category Education, language English, homepage URL and support URL both point at the repo (support URL to its issues page specifically), since there's no standalone site yet.
+- Filled out the privacy practices tab: single purpose description plus per-permission justifications for activeTab, host permissions, and storage. Answered No to remote code, left every data collection category unchecked, checked all three certifications.
+- Submitted Prof Lookup v1.6.0 for review. Item ID ckphgmjfninpcijmhnlpobmphclklleg, status pending review, auto-publish on approval.
+### Challenges
+- Host permissions put this submission on Google's in-depth human review path rather than the fast automated one, so pending review could mean days, not hours. Nothing to do but wait — flagging it so a quiet week doesn't read as something broken.
+- Caught after submitting: the storage justification only mentions theme and collapsed state, but content.js also persists drag position under the same storage key. Logged in docs/phase6-notes.md to fix in the next submission; not a data-use problem, just an undersold justification.
+### Next Steps
+- Wait on review; auto-publish means no further action is needed once Google approves.
+- Confirm with Antony whether the 15-to-20-professor hardening pass landed before this build or still needs to happen for a follow-up release — it doesn't block this submission either way.
 
 ---
 
